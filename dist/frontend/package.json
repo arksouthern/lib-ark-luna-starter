@@ -1,0 +1,13 @@
+{
+    "displayName": "Lune Note",
+    "name": "@arksouthern/luna.note",
+    "description": "Simple text editor",
+    "author": {
+        "name": "Ark Southern"
+    },
+    "version": "v0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "monaco-editor": "^0.52.2"
+    }
+}
