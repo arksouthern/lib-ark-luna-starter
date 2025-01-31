@@ -1,5 +1,0 @@
-{
-    "prog": "@arksouthern/luna.explore",
-    "params": {"openPath": "../data"},
-    "icon": "/src/assets/ico/64.ico"
-}
