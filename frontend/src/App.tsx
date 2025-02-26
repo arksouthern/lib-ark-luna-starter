@@ -1,15 +1,15 @@
-import { createEffect, For, Show, Switch, Match as SwitchMatch, type Component, type JSX, lazy, onMount, createSignal, Setter } from 'solid-js'
+import { createEffect, For, Show, type Component, onMount, createSignal, Setter } from 'solid-js'
 import { Destination } from './lib/destination'
 import { API, getRoot } from './lib/url'
 import { folderMap, store, zIndex } from './Store'
-import { App, Prog, Sm, SmFolder, SmShortcut } from './Types'
+import { Prog, Sm, SmFolder, SmShortcut } from './Types'
 import { A } from './lib/ax'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from './components/ui/context-menu'
-import { openApp } from './lib/luna'
+import { openApp, openFile } from './lib/luna'
 import { connectWebSocket } from './lib/ws'
 import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover'
-import { Tooltip, TooltipContent, TooltipTrigger } from './components/ui/tooltip'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './components/ui/hover-card'
+import { XpRightClickMenu, XpRightClickMenuDivider, XpRightClickMenuItem } from './components/luna/right-click-menu'
 
 const [startOpen, setStartOpen] = createSignal(false)
 
@@ -17,18 +17,22 @@ const [startOpen, setStartOpen] = createSignal(false)
 function WinXp() {
 
   createEffect(async () => {
-    const { progImg, progList, progPinList, progOpener, progStartMenu } = await API.loadDesktopProgs({})
+    const { progImg, progList, progPinList, progOpener, progStartMenu, progRecents } = await API.loadDesktopProgs({})
     store.desktopProgs = progList
     store.taskPins = progPinList
     store.desktopOpener = progOpener
     store.desktopStartProgs = progStartMenu
+    store.desktopRecents = progRecents
     if (progImg["background-image"]) progImg["background-image"] = progImg["background-image"].replace("R00T", getRoot())
     store.desktopImage = progImg
-  
-    const startupApps = store.desktopStartProgs.find((sm)=>sm.name == "Startup" && sm.as == "folder")! as SmFolder
+
+    const startupApps = store.desktopStartProgs.find((sm) => sm.name == "Startup" && sm.as == "folder")! as SmFolder
     for (const app of startupApps.children) {
-      if (app.as == "shortcut") openApp({program: app.prog, params: app.params})
+      if (app.as == "shortcut") openApp({ program: app.prog, params: app.params })
     }
+    createEffect(() => {
+      API.writeDesktopFile({ data: JSON.stringify(store.desktopRecents), path: "../data/Desktop/Recent.di.json" })
+    })
   })
 
   onMount(() => {
@@ -41,8 +45,71 @@ function WinXp() {
       class="h-screen overscroll-contain flex text-black"
       style={store.desktopImage}
     >
-      <div id='desktopWindow' class="flex-1">
-        <DesktopRightClickMenu>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0">
+        <defs>
+          {/* <!-- 16-bit color (5-6-5 RGB) --> */}
+          <filter id="16bit">
+            {/* <!-- R5 G6 B5 simulation --> */}
+            <feComponentTransfer>
+              <feFuncR type="discrete" tableValues="0 0.03225806 0.06451613 0.09677419 0.12903226 0.16129032 0.19354839 0.22580645 0.25806452 0.29032258 0.32258065 0.35483871 0.38709677 0.41935484 0.45161290 0.48387097 0.51612903 0.54838710 0.58064516 0.61290323 0.64516129 0.67741935 0.70967742 0.74193548 0.77419355 0.80645161 0.83870968 0.87096774 0.90322581 0.93548387 0.96774194 1" />
+              <feFuncG type="discrete" tableValues="0 0.015873 0.031746 0.047619 0.063492 0.079365 0.095238 0.111111 0.126984 0.142857 0.158730 0.174603 0.190476 0.206349 0.222222 0.238095 0.253968 0.269841 0.285714 0.301587 0.317460 0.333333 0.349206 0.365079 0.380952 0.396825 0.412698 0.428571 0.444444 0.460317 0.476190 0.492063 0.507937 0.523810 0.539683 0.555556 0.571429 0.587302 0.603175 0.619048 0.634921 0.650794 0.666667 0.682540 0.698413 0.714286 0.730159 0.746032 0.761905 0.777778 0.793651 0.809524 0.825397 0.841270 0.857143 0.873016 0.888889 0.904762 0.920635 0.936508 0.952381 0.968254 0.984127 1" />
+              <feFuncB type="discrete" tableValues="0 0.03225806 0.06451613 0.09677419 0.12903226 0.16129032 0.19354839 0.22580645 0.25806452 0.29032258 0.32258065 0.35483871 0.38709677 0.41935484 0.45161290 0.48387097 0.51612903 0.54838710 0.58064516 0.61290323 0.64516129 0.67741935 0.70967742 0.74193548 0.77419355 0.80645161 0.83870968 0.87096774 0.90322581 0.93548387 0.96774194 1" />
+            </feComponentTransfer>
+          </filter>
+
+          {/* <!-- 8-bit color (3-3-2 RGB) --> */}
+          <filter id="8bit">
+            {/* <!-- R3 G3 B2 simulation --> */}
+            <feComponentTransfer>
+              <feFuncR type="discrete" tableValues="0 0.14285714 0.28571429 0.42857143 0.57142857 0.71428571 0.85714286 1" />
+              <feFuncG type="discrete" tableValues="0 0.14285714 0.28571429 0.42857143 0.57142857 0.71428571 0.85714286 1" />
+              <feFuncB type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+            </feComponentTransfer>
+          </filter>
+
+          {/* <!-- 4-bit color (16 colors) --> */}
+          <filter id="4bit">
+            <feComponentTransfer>
+              <feFuncR type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+              <feFuncG type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+              <feFuncB type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+            </feComponentTransfer>
+          </filter>
+
+          {/* <!-- 1-bit color (black and white) --> */}
+          <filter id="1bit">
+            <feComponentTransfer>
+              <feFuncR type="discrete" tableValues="0 1" />
+              <feFuncG type="discrete" tableValues="0 1" />
+              <feFuncB type="discrete" tableValues="0 1" />
+            </feComponentTransfer>
+          </filter>
+        </defs>
+      </svg>
+      <div inert class='h-screen w-screen fixed top-0 left-0 z-[999999]' style={{ 
+        // "--webkit-backdrop-filter": "url(#1bit)", "backdrop-filter": "url(#1bit)" 
+      }} />
+      <div id='desktopWindow' class="flex-1 text-xs">
+        <XpRightClickMenu xpRightClickMenuItemList={<>
+          <XpRightClickMenuItem title="Arrange Icons By" xpRightClickMenuItemList={<>
+            <XpRightClickMenuItem title="TODO Name" />
+            <XpRightClickMenuItem title="TODO Size" />
+            <XpRightClickMenuItem title="TODO Type" />
+            <XpRightClickMenuItem title="TODO Modified" />
+            <XpRightClickMenuDivider />
+            <XpRightClickMenuItem disabled title="Show in Groups" />
+            <XpRightClickMenuItem title="TODO Auto Arrange" />
+            <XpRightClickMenuItem indicator='checked' title="TODO Align to Grid" />
+            <XpRightClickMenuDivider />
+            <XpRightClickMenuItem indicator='checked' title="TODO Show Desktop Icons" />
+          </>} />
+          <XpRightClickMenuItem title="TODO Refresh" />
+          <XpRightClickMenuDivider />
+          <XpRightClickMenuItem title="TODO Paste" />
+          <XpRightClickMenuItem title="TODO Paste Shortcut" />
+          <XpRightClickMenuDivider />
+          <XpRightClickMenuItem title="TODO Properties" />
+        </>}>
           <A.DesktopApps style={{ "text-shadow": "black 0px 1px 1px" }} class='absolute top-0 flex flex-col left-0 h-full w-full text-white text-xs text-center'>
             <A.AppColumn class='px-8 py-7 flex-1 flex gap-6'>
               <div class='grid [grid:repeat(7,auto)_/_auto-flow] space-x-2'>
@@ -84,7 +151,7 @@ function WinXp() {
               <div class='flex-1'></div>
             </A.AppColumn>
           </A.DesktopApps>
-        </DesktopRightClickMenu>
+        </XpRightClickMenu>
         <For each={store.open}>{
           Prog => <Prog.App app={Prog} />
         }</For>
@@ -95,14 +162,12 @@ function WinXp() {
               <PopoverTrigger class='p-0 m-0 h-7'>
                 <A.StartBtn class="h-full relative hover:brightness-110 cursor-pointer w-24">
                   <img class="h-full" src="data:image/png;base64,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" alt="start" />
-                  <A.StartText class="absolute top-0 bottom-0 leading-[1.1rem] h-[1.1rem] left-[1.8rem] px-[.25rem] py-0 m-auto italic text-white backdrop-blur-sm" style={{ "text-shadow": `0 0 .25rem #000c` }}>
+                  <A.StartText class="absolute text-base top-0 bottom-0 leading-[1.1rem] h-[1.1rem] left-[1.8rem] px-[.25rem] py-0 m-auto italic text-white backdrop-blur-sm" style={{ "text-shadow": `0 0 .25rem #000c` }}>
                     start
                   </A.StartText>
                 </A.StartBtn>
               </PopoverTrigger>
-              <PopoverContent class='-ml-2 mb-3 p-0 rounded-none border-none
-              
-              '>
+              <PopoverContent class='top-[9px] -ml-2 mb-3 p-0 rounded-none border-none bg-transparent'>
                 <StartMenuContent />
               </PopoverContent>
             </Popover>
@@ -127,21 +192,23 @@ function WinXp() {
 
             <For each={store.open}>{
               app => (
-                <A.TaskProgram
-                  aria-selected={app.zIndex == zIndex.value}
-                  onClick={() => {
-                    app.zIndex = ++zIndex.value
-                    if (app.view.as == "restore") app.view = { as: "minimized" }
-                    else app.view = { as: "restore" }
-                  }}
-                  class="cursor-pointer flex-1 flex items-center max-w-36 rounded-[.13rem] h-5 text-[.7rem] text-white px-2 mt-0.5 bg-[rgb(60,129,243)] [box-shadow:rgba(0,0,0,0.3)_-1px_0px_inset,rgba(255,255,255,0.2)_1px_1px_1px_inset] hover:bg-[rgb(83,163,255)] active:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] active:bg-[rgb(30,82,183)] aria-selected:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] aria-selected:bg-[rgb(30,82,183)]"
-                >
-                  <img class="h-[.95rem] w-[.95rem] mr-1" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA8UlEQVR42pWSsQ2DMBBFrYiNbhZqqngFWlfs4G0YwHVWQKIKZZTC8b/kHHMYSCx9YYHf88dgTDH6vo/DMJzG7A0Izob3PrZtG48Fz/tuIMC1KtECYwOnFAAkohylcBkqYbIxLsvC8xACt8BmqoWLNj3waQHRO4ljicC4zvOcJYXApRtY7leVITHhKwGMTNONJVnA7x48V9WvICnhlQBwSLtTWiQCaSDVAWIOcNOg6zqub+jdABnHkcNnwVK/38A58zk0m4EyGq6eAcDL9RGbpuEAktTgjUAk8iPpz6bhqkC+huxYAho+FODBr6kKcPOfvACzZogqWb89XgAAAABJRU5ErkJggg==" alt="Internet Explorer" />
+                <>
+                  {app.taskbar ? <A.TaskProgram
+                    aria-selected={app.zIndex == zIndex.value}
+                    onClick={() => {
+                      app.zIndex = ++zIndex.value
+                      if (app.view.as == "restore") app.view = { as: "minimized" }
+                      else app.view = { as: "restore" }
+                    }}
+                    class=" flex-1 flex items-center max-w-36 rounded-[.13rem] h-5 text-[0.62rem] text-white px-2 mt-0.5 bg-[rgb(60,129,243)] [box-shadow:rgba(0,0,0,0.3)_-1px_0px_inset,rgba(255,255,255,0.2)_1px_1px_1px_inset] hover:bg-[rgb(83,163,255)] active:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] active:bg-[rgb(30,82,183)] aria-selected:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] aria-selected:bg-[rgb(30,82,183)]"
+                  >
+                    {app.taskbar}
+                    {/* <img class="h-[.95rem] w-[.95rem] mr-1" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA8UlEQVR42pWSsQ2DMBBFrYiNbhZqqngFWlfs4G0YwHVWQKIKZZTC8b/kHHMYSCx9YYHf88dgTDH6vo/DMJzG7A0Izob3PrZtG48Fz/tuIMC1KtECYwOnFAAkohylcBkqYbIxLsvC8xACt8BmqoWLNj3waQHRO4ljicC4zvOcJYXApRtY7leVITHhKwGMTNONJVnA7x48V9WvICnhlQBwSLtTWiQCaSDVAWIOcNOg6zqub+jdABnHkcNnwVK/38A58zk0m4EyGq6eAcDL9RGbpuEAktTgjUAk8iPpz6bhqkC+huxYAho+FODBr6kKcPOfvACzZogqWb89XgAAAABJRU5ErkJggg==" alt="Internet Explorer" />
                   <A.ProgramTitle class="text-nowrap overflow-hidden text-ellipsis">
                     {app.App.name}
-                  </A.ProgramTitle>
-                </A.TaskProgram>
-              )
+                  </A.ProgramTitle> */}
+                  </A.TaskProgram> : <></>
+                  }</>)
             }</For>
           </A.MainBar>
 
@@ -231,7 +298,6 @@ function RightClickMenu(props: { children: any, prog: Prog }) {
 
           <ContextMenuSeparator class="mx-0.5" />
 
-
           <ContextMenuSub overlap>
             <ContextMenuSubTrigger
               class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none"
@@ -297,74 +363,98 @@ function StartMenuContent() {
         <A.Icon class='border-2 border-[#b4c4da] rounded-[3px]'>
           <img class='w-[42px] h-[42px]' src="./src/assets/chess-icon.png" />
         </A.Icon>
-        <p class='pl-1 [text-shadow:rgba(0,_0,_0,_0.7)_1px_1px] text-[14px] font-bold'>User</p>
+        <p class='pl-1.5 [text-shadow:rgba(0,_0,_0,_0.7)_1px_1px] text-[16px] font-normal'>Admin</p>
       </A.StartMenuHeader>
       <A.StartMenuMain class='flex-1 bg-white relative flex  [font-size:11px]
-                  [box-shadow:rgb(56,_93,_231)_0px_1px] [border-top:1px_solid_rgb(56,_93,_231)] mx-[2px] h-[390px]
+                  [box-shadow:#3467C7_0px_1px] [border-top:1px_solid_rgb(56,_93,_231)] mx-[2px] h-[390px]
                   ' >
         <A.OrangeLine class='absolute h-[2px] top-0 left-0 right-0 
                     [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgb(218,_136,_74)_50%,_rgba(0,_0,_0,_0)_100%)]
                     '></A.OrangeLine>
-        <div class='grid grid-cols-2 h-full w-full'>
+        <div class='grid grid-cols-2 h-full w-full overflow-hidden'>
           <div class=''>
-            <A.ProgramItemImportant class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/ico/1487.ico' />
-              <p class='ml-[3px]  font-bold  '>Internet <br />
-                <span class='text-[#afafaf] font-normal'>Internet Explorer</span></p>
-            </A.ProgramItemImportant>
-            <A.ProgramItemImportant class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/ico/106.ico' />
-              <p class='ml-[3px]  font-bold  '>E-mail<br />
-                <span class='text-[#afafaf] font-normal'>Outlook Express</span></p>
-            </A.ProgramItemImportant>
+            <For each={store.desktopRecents.pinnedShortcuts.slice(0, 8)} children={(sm) => (
+              <XpRightClickMenu xpRightClickMenuItemList={<>
+                <XpRightClickMenuItem onClick={() => {
+                  openApp({ program: sm.prog, params: sm.params })
+                  setStartOpen(false)
+                }} title={<span class='font-semibold'>Open</span>} />
+                <XpRightClickMenuItem disabled title="Run as..." />
+                <XpRightClickMenuItem title="TODO Open file location" />
+                <XpRightClickMenuItem onClick={() => {
+                  const index = store.desktopRecents.pinnedShortcuts.findIndex((sm2) => sm.prog == sm2.prog)
+                  store.desktopRecents.pinnedShortcuts.splice(index, 1)
+                }} title="Unpin from Start Menu" />
+                <XpRightClickMenuDivider />
+                <XpRightClickMenuItem title="TODO Copy" />
+                <XpRightClickMenuDivider />
+                <XpRightClickMenuItem title="TODO Properties" />
+              </>}>
+                <A.ProgramItemImportant onClick={() => {
+                  openApp({ program: sm.prog, params: sm.params })
+                  setStartOpen(false)
+                }} class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
+                  <img class='h-[30px] w-[30px]' src={sm.icon} />
+                  <p class='ml-[3px] pr-2  font-bold  '>
+                    {sm.name ? sm.name : "Untitled Program"}
+                    {/* <br />
+                    <span class='text-[rgb(175,175,175)] font-normal'>Description</span> */}
+                  </p>
+                </A.ProgramItemImportant>
+              </XpRightClickMenu>
+            )} />
             <A.ItemSeperatorGrey class='
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(0,_0,_0,_0.1)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box;]
                       h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperatorGrey>
-            <A.ProgramItem class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/minesweeper-icon.png' />
-              <p class='ml-[3px]  '>Minesweeper</p>
-            </A.ProgramItem>
-            <A.ProgramItem class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/notepad-icon.png' />
-              <p class='ml-[3px]  '>Notepad</p>
-            </A.ProgramItem>
-            <A.ProgramItem class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/winamp-icon.png' />
-              <p class='ml-[3px]  '>Winamp</p>
-            </A.ProgramItem>
-            <A.ProgramItem class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/paint-icon.png' />
-              <p class='ml-[3px]  '>Paint</p>
-            </A.ProgramItem>
-            <A.ProgramItem class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/mp-icon.png' />
-              <p class='ml-[3px]  '>Windows Media Player</p>
-            </A.ProgramItem>
-            <A.ProgramItem class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
-              <img class='h-[30px] w-[30px]' src='./src/assets/messenger-icon.png' />
-              <p class='ml-[3px]  '>Windows Messenger</p>
-            </A.ProgramItem>
+            <For each={store.desktopRecents.recentPrograms.slice(0, 8 - Math.min(8, store.desktopRecents.pinnedShortcuts.length))} children={(sm) => (
+              <XpRightClickMenu xpRightClickMenuItemList={<>
+                <XpRightClickMenuItem onClick={() => {
+                    openApp({ program: sm.prog, params: sm.params })
+                    setStartOpen(false)
+                  }} title={<span class='font-semibold'>Open</span>} />
+                  <XpRightClickMenuItem disabled title="Run as..." />
+                  <XpRightClickMenuItem title="TODO Open file location" />
+                  <XpRightClickMenuItem onClick={() => {
+                    store.desktopRecents.pinnedShortcuts.unshift(sm)
+                  }} title="Pin to Start Menu" />
+                  <XpRightClickMenuDivider />
+                  <XpRightClickMenuItem title="TODO Copy" />
+                  <XpRightClickMenuDivider />
+                  <XpRightClickMenuItem title="TODO Properties" />
+              </>}>
+                  <A.ProgramItem onClick={() => {
+                    openApp({ program: sm.prog, params: sm.params })
+                    setStartOpen(false)
+                  }} class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
+                    <img class='h-[30px] w-[30px]' src={sm.icon} />
+                    <p class='ml-[3px]  '>{sm.name ? sm.name : "Untitled Program"}</p>
+                  </A.ProgramItem>
+              </XpRightClickMenu>
+            )} />
             <div class='h-[20px]'></div>
             <A.ItemSeperatorGrey class='
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(0,_0,_0,_0.1)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box;]
                       h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperatorGrey>
-
-            <HoverCard open={hoverMount()}>
-              <HoverCardTrigger class='w-full'>
-                <A.AllPrograms class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-black  hover:text-white'>
+            <HoverCard
+              openDelay={250}
+              placement='top-end'
+              open={hoverMount()}
+            >
+              <HoverCardTrigger class='w-16'>
+                <A.AllPrograms class='group mx-1 px-1 py-px mt-1 items-center my-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
                   <div class='w-[30px]'></div>
                   <p class='ml-[3px] font-bold mr-[3px]'>All Programs</p>
-                  <img class='h-[18px] w-[18px]' src='./src/assets/all-programs.ico' />
+                  <img class='h-[22px] w-[22px] group-hover:brightness-125' src='./src/assets/all-programs.ico' />
                 </A.AllPrograms>
               </HoverCardTrigger>
-              <HoverCardContent class='ml-32 text-[11px] -mb-7 rounded-none bg-white border-none p-0
+              <HoverCardContent class='text-[0.62rem] w-44 ml-[132px] -mb-[36px] rounded-none bg-white border-none p-0
                         [box-shadow:rgb(114,_173,_233)_0px_0px_0px_1px_inset,_rgba(0,_0,_0,_0.5)_2px_3px_3px]'>
                 <For
                   each={store.desktopStartProgs}
                   children={(sm) => (
-                    <AllProgramsRecursive sm={sm} setHoverCardMount={setHoverMount} />
+                    <AllProgramsRecursive nestCount={1} sm={sm} setHoverCardMount={setHoverMount} />
                   )}
                 />
               </HoverCardContent>
@@ -372,23 +462,65 @@ function StartMenuContent() {
 
           </div>
           <div class='bg-[#cbe3ff] h-full w-full [border-left:1px_solid_rgba(58,_58,_255,_0.37)]'>
-            <A.PcItem class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.PcItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Documents" } })
+              setStartOpen(false)
+            }} class='mx-1 px-1 py-px mt-2 items-center my-1.5 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/796.ico' />
               <p class='ml-[3px]  font-bold  '>My Documents</p>
             </A.PcItem>
-            <A.PcItem class='mx-1 px-1  my-1.5 items-center flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/170.ico' />
-              <p class='ml-[3px]  font-bold  '>My Recent Documents</p>
-            </A.PcItem>
-            <A.PcItem class='mx-1 px-1  my-1.5 items-center flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <HoverCard
+              openDelay={250}
+              closeDelay={250}
+            >
+              <HoverCardTrigger>
+                <A.PcItem class='aria-disabled:grayscale group mx-1 px-1 py-px  my-1.5 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
+                  <img class='h-[22px] w-[22px]' src='./src/assets/ico/170.ico' />
+                  <p class='ml-[3px]  font-bold  '>My Recent Documents </p>
+                  <div class='w-0 h-0 ml-4 group-hover:border-l-white border-l-[#00136b] border-[4px] border-transparent'></div>
+                </A.PcItem>
+              </HoverCardTrigger>
+              <HoverCardContent class='w-44 ml-[22rem] text-[11px] -mt-8 rounded-none bg-white border-none p-0
+                             [box-shadow:rgb(114,_173,_233)_0px_0px_0px_1px_inset,_rgba(0,_0,_0,_0.5)_2px_3px_3px]'>
+                <Show when={store.desktopRecents.recentFiles.length > 0} fallback={
+                  <A.AllItem class='p-1 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
+                    <img class='w-[16px] h-[16px] invisible mx-2' src="./src/assets/ico/581.ico" />
+                    <p>(Empty)</p>
+                  </A.AllItem>
+                }>
+                  <For
+                    each={store.desktopRecents.recentFiles}
+                    children={(file) => (
+                      <A.AllItem onClick={async () => {
+                        await openFile(file.params)
+                      }} class='p-1 w-full flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
+                        <img class='w-[16px] h-[16px] mx-1' src="./src/assets/ico/514.ico" />
+                        <p class='overflow-hidden text-ellipsis text-nowrap flex-1'>{file.name || (file.params.openPath as string).slice((file.params.openPath as string).lastIndexOf("/") + 1)}</p>
+                      </A.AllItem>
+                    )}
+                  />
+                </Show>
+              </HoverCardContent>
+            </HoverCard>
+
+            <A.PcItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Pictures" } })
+              setStartOpen(false)
+            }} class='mx-1 px-1 py-px  my-1 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/808.ico' />
               <p class='ml-[3px]  font-bold  '>My Pictures</p>
             </A.PcItem>
-            <A.PcItem class='mx-1 px-1  my-1.5 items-center flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.PcItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Music" } })
+              setStartOpen(false)
+            }} class='mx-1 px-1 py-px  my-1 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/820.ico' />
               <p class='ml-[3px]  font-bold  '>My Music</p>
             </A.PcItem>
-            <A.PcItem class='mx-1 px-1  my-1.5 items-center flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.PcItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.explore", params: { openPath: "" } })
+              setStartOpen(false)
+            }} class='mx-1 px-1 py-px  my-1 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/123.ico' />
               <p class='ml-[3px]  font-bold  '>My Computer</p>
             </A.PcItem>
@@ -396,19 +528,19 @@ function StartMenuContent() {
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(135,_179,_226,_0.71)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box]
                        h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperator>
-            <A.SettingsItem class='mx-1 px-1 items-center  my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/182.ico' />
               <p class='ml-[3px]   '>Control Panel</p>
             </A.SettingsItem>
-            <A.SettingsItem class='mx-1 px-1 items-center  my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/357.ico' />
               <p class='ml-[3px]   '>Set Program Access and Defaults</p>
             </A.SettingsItem>
-            <A.SettingsItem class='mx-1 px-1 items-center my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px] ' src='./src/assets/ico/633.ico' />
               <p class='ml-[3px]   '>Connect To</p>
             </A.SettingsItem>
-            <A.SettingsItem class='mx-1 px-1 items-center  my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/436.ico' />
               <p class='ml-[3px]   '>Printers and Faxes</p>
             </A.SettingsItem>
@@ -416,15 +548,18 @@ function StartMenuContent() {
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(135,_179,_226,_0.71)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box]
                        h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperator>
-            <A.SettingsItem class='mx-1 px-1 items-center  my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/967.ico' />
               <p class='ml-[3px]   '>Help and Support</p>
             </A.SettingsItem>
-            <A.SettingsItem class='mx-1 px-1 items-center  my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/194.ico' />
               <p class='ml-[3px]   '>Search</p>
             </A.SettingsItem>
-            <A.SettingsItem class='mx-1 px-1 items-center  my-1.5 flex hover:bg-[#2f71cd] text-[#00136b]  hover:text-white'>
+            <A.SettingsItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.run", params: { openPath: "" } })
+              setStartOpen(false)
+            }} class=' mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
               <img class='h-[22px] w-[22px]' src='./src/assets/ico/561.ico' />
               <p class='ml-[3px]   '>Run...</p>
             </A.SettingsItem>
@@ -435,11 +570,11 @@ function StartMenuContent() {
       <A.StartMenuFooter class='h-[36px] text-xs flex justify-end
                   [background:linear-gradient(rgb(66,_130,_214)_0%,_rgb(59,_133,_224)_3%,_rgb(65,_138,_227)_5%,_rgb(65,_138,_227)_17%,_rgb(60,_135,_226)_21%,_rgb(55,_134,_228)_26%,_rgb(52,_130,_227)_29%,_rgb(46,_126,_225)_39%,_rgb(35,_116,_223)_49%,_rgb(32,_114,_219)_57%,_rgb(25,_110,_219)_62%,_rgb(23,_107,_216)_72%,_rgb(20,_104,_213)_75%,_rgb(17,_101,_210)_83%,_rgb(15,_97,_203)_88%)]
                 '>
-        <A.CommandItem class='mx-1 px-1 mt-2 items-center py-1.5 flex hover:bg-[rgba(60,_80,_210,_0.5)] text-white '>
+        <A.CommandItem aria-disabled class='aria-disabled:grayscale aria-disabled:opacity-80 mx-1 px-1 my-1 items-center py-1.5 flex hover:bg-[rgba(60,_80,_210,_0.5)] text-white '>
           <img class='h-[22px] w-[22px]' src='./src/assets/ico/338.ico' />
           <p class='ml-[3px]  '>Log Off</p>
         </A.CommandItem>
-        <A.CommandItem class='mx-1 px-1 mt-2 items-center py-1.5 flex hover:bg-[rgba(60,_80,_210,_0.5)] text-white '>
+        <A.CommandItem aria-disabled class='aria-disabled:grayscale aria-disabled:opacity-80 mx-1 px-1 my-1 items-center py-1.5 flex hover:bg-[rgba(60,_80,_210,_0.5)] text-white '>
           <img class='h-[22px] w-[22px]' src='./src/assets/ico/241.ico' />
           <p class='ml-[3px]  '>Turn Off Computer</p>
         </A.CommandItem>
@@ -448,49 +583,61 @@ function StartMenuContent() {
   )
 }
 
-function AllProgramsRecursive(props: { sm: Sm, setHoverCardMount: Setter<true | undefined> }) {
+function AllProgramsRecursive(props: { sm: Sm, setHoverCardMount: Setter<true | undefined>, nestCount: number }) {
 
   const [hoverCardMount, setHoverCardMount] = createSignal<true | undefined>(undefined)
   return (
     <>
       {props.sm.as == "shortcut"
         ?
-        <A.AllItem class='p-1 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#2f71cd] hover:text-white' onClick={async () => {
+        <A.AllItem class='px-1 py-0.5 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white' onClick={async () => {
           openApp({ program: (props.sm as SmShortcut).prog, params: (props.sm as SmShortcut).params })
           setStartOpen(false)
         }}>
-          <img class='w-[16px] h-[16px] mx-2' src={props.sm.icon} />
+          <img class='w-[16px] h-[16px] mx-1' src={props.sm.icon} />
           <p>{props.sm.name.replace(".xp.json", "")}</p>
         </A.AllItem>
         :
-        <HoverCard open={hoverCardMount()}>
+        <HoverCard
+          openDelay={50}
+          closeDelay={50}
+          placement='top-end'
+          open={hoverCardMount()}
+        >
           <HoverCardTrigger>
-            <A.AllItem class='p-1 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#2f71cd] hover:text-white'>
-              <img class='w-[16px] h-[16px] mx-2' src={"./src/assets/ico/23.ico"} />
+            <A.AllItem class='px-1 py-0.5 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
+              <img class='w-[16px] h-[16px] mx-1' src={"./src/assets/ico/23.ico"} />
               <p>{props.sm.name}</p>
               <div class='flex-1'></div>
-              <div class="h-full  mx-1 -rotate-90 before:border-x-transparent before:border-y-black before:border-[3px] before:border-b-0" />
+              <div class="h-4 translate-x-2 -rotate-90 before:border-x-transparent before:border-y-black before:border-[4px] before:border-b-0" />
             </A.AllItem>
           </HoverCardTrigger>
-          <HoverCardContent onMouseLeave={(e) => props.setHoverCardMount(undefined)} onMouseEnter={(e) => props.setHoverCardMount(true)} class='ml-[21rem] text-[11px]  -mt-7 rounded-none bg-white border-none p-0
+          <HoverCardContent style={{ "--nest-count": props.nestCount }}
+            onMouseLeave={() => props.setHoverCardMount(undefined)}
+            onMouseEnter={() => props.setHoverCardMount(true)}
+            class='w-44 ml-[calc(11rem_*_var(--nest-count))] text-[11px] relative -mb-[1.5rem] rounded-none bg-white border-none p-0
                              [box-shadow:rgb(114,_173,_233)_0px_0px_0px_1px_inset,_rgba(0,_0,_0,_0.5)_2px_3px_3px]'>
             <Show when={props.sm.children.length > 0} fallback={
-              <A.AllItem class='p-1 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#2f71cd] hover:text-white'>
+              <A.AllItem class='p-1 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
                 <img class='w-[16px] h-[16px] invisible mx-2' src="./src/assets/ico/581.ico" />
                 <p>(Empty)</p>
               </A.AllItem>
             }>
               <For
-                each={props.sm.children}
+                each={props.sm.children.filter((sm2) => sm2.as == "folder").sort((a, b) => a.name.localeCompare(b.name))}
                 children={(sm2) => (
-                  <AllProgramsRecursive sm={sm2} setHoverCardMount={setHoverCardMount} />
+                  <AllProgramsRecursive nestCount={props.nestCount + 1} sm={sm2} setHoverCardMount={setHoverCardMount} />
+                )}
+              />
+              <For
+                each={props.sm.children.filter((sm2) => sm2.as == "shortcut").sort((a, b) => a.name.localeCompare(b.name))}
+                children={(sm2) => (
+                  <AllProgramsRecursive nestCount={props.nestCount + 1} sm={sm2} setHoverCardMount={setHoverCardMount} />
                 )}
               />
             </Show>
           </HoverCardContent>
         </HoverCard>}
-
-
     </>
 
   )

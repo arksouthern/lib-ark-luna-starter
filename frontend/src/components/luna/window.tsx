@@ -1,5 +1,6 @@
-import { createMemo, JSX } from "solid-js";
+import { createEffect, createMemo, JSX } from "solid-js";
 import { A } from "~/lib/ax";
+import { taskbarAppUpdate } from "~/lib/luna";
 import { mx } from "~/lib/mx";
 import { folderMap, zIndex } from "~/Store"
 import { App, XyCore } from "~/Types";
@@ -8,7 +9,7 @@ const WIN_MARGIN = 1
 const PIX_TO_REM = 16
 const subToRem = (pix: number, cache: number) =>
   pix / PIX_TO_REM - cache - WIN_MARGIN
-export type XpWindowProps = App & { children: any, title: any, }
+export type XpWindowProps = App & { children: any, title: any, buttons: any }
 const onBeginMoving = (props: App) => (e: any) => {
   if (props.app.dialog) return
 
@@ -46,6 +47,9 @@ const onBeginResize = (props: App) => (e: any) => {
   }
 }
 function Window(props: XpWindowProps) {
+  createEffect(()=>{
+    taskbarAppUpdate({app: props, taskbarJsx: props.title})
+  })
   return (
     <A.XpWindow
       onMouseDown={onBeginResize(props)}
@@ -63,7 +67,8 @@ function Window(props: XpWindowProps) {
           class="absolute top-1.5 left-1 right-1 text-white h-6 flex text-[.75rem]"
           style={{ "font-family": "var(--f-title)", "text-shadow": `rgb(0, 0, 0) 1px 1px` }}
         >
-          {props.title}
+          {props.title} 
+          {props.buttons}
         </A.TitleContent>
 
       </A.XpHeader>
