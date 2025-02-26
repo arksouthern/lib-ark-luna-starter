@@ -54,8 +54,8 @@ async function start() {
     
     for (const route in APIs) // @ts-ignore
         if(typeof APIs[route] == "function") // @ts-ignore
-            server.post(`/api/v1/${route}`, (req, res) => // @ts-ignore
-                APIs[route](useR(req, res))
+            server.post(`/api/v1/${route}`, useError((req, res) => // @ts-ignore
+                APIs[route](useR(req, res)), "BACKEND", "CORE")
             )
 
     const progs = await readdir("../frontend/src/programs/v1/")

@@ -1,7 +1,7 @@
-import { readdir, readFile, rm } from "fs/promises"
+import { readdir, readFile, rm, writeFile } from "fs/promises"
 import { DESTINATION_SETTINGS } from "../../destination.settings.js"
 
-import {Prog, Shortcut, Sm, SmFolder, SmShortcut} from "../../frontend/src/Types.js" 
+import {Prog, ProgramInfo, Shortcut, Sm, SmFolder, SmShortcut} from "../../frontend/src/Types.js" 
 import { Dirent } from "fs"
 
 export const api = {
@@ -28,12 +28,23 @@ export const api = {
         
         const progStartMenu = await startMenuTree()
         
-        return {progList, progImg, progPinList, progOpener, progStartMenu}
+        const progRecents = JSON.parse(await readFile(`${__dirname}/../../data/Desktop/Recent.di.json`, "utf-8"))
+
+        return {progList, progImg, progPinList, progOpener, progStartMenu, progRecents}
     },
     
     deleteDesktopProg: async (props: {progName: string}) =>{
         await rm(`${__dirname}/../../data/Desktop/${props.progName}`)
         return {}
+    },
+
+    
+    writeDesktopFile: async (props:{path:string, data: string}) => {
+        await writeFile(props.path, props.data, "utf-8")
+    },
+    programInfoGet: async (props: {program: string}) => {
+        const programData = JSON.parse(await readFile(`${__dirname}/../../frontend/src/programs/v1/${props.program.replace("@", "").replace("/", ".")}/frontend/package.json`, "utf-8")) as ProgramInfo
+        return programData
     }
 }
 

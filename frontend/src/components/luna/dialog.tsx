@@ -9,8 +9,12 @@ export function createDialog(props: {offsetX: number, offsetY: number, sizeX: nu
         zIndex: ++zIndex.value,
         placeX: props.app.placeX + props.offsetX,
         placeY: props.app.placeY + props.offsetY,
-        sizeX: props.sizeX,
-        sizeY: props.sizeY
+        get sizeX() {
+            return props.sizeX
+        },
+        get sizeY() {
+            return props.sizeY
+        }
     }) as XyCore
     const setDialog = {
         dialogShow: () => {

@@ -1,5 +1,5 @@
 import { createMutable } from "solid-js/store"
-import { App, Prog, Shortcut, Sm, XpXy } from "./Types";
+import { App, DesktopRecent, Prog, Shortcut, Sm, XpXy } from "./Types";
 
 export const
 
@@ -39,7 +39,12 @@ export const
         desktopImage: {},
         taskPins: [] as Prog[],
         desktopOpener: {} as {extensions: Record<string, {prog: string, icon: string}>},
-        desktopStartProgs: [] as Sm[]
+        desktopStartProgs: [] as Sm[],
+        desktopRecents: {
+            "recentPrograms": [],
+            "recentFiles": [],
+            "pinnedShortcuts": []
+          } as DesktopRecent
     })
 
 // @ts-ignore

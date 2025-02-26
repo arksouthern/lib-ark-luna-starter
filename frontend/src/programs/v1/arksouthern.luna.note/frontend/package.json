@@ -1,5 +1,5 @@
 {
-    "displayName": "Lune Note",
+    "displayName": "Notepad",
     "name": "@arksouthern/luna.note",
     "description": "Simple text editor",
     "author": {
@@ -9,5 +9,6 @@
     "license": "MIT",
     "dependencies": {
         "monaco-editor": "^0.52.2"
-    }
+    },
+    "icon": "/src/assets/notepad-icon.png"
 }
