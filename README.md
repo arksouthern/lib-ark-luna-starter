@@ -2,7 +2,7 @@
 ## Quick About
 This is an SDK for developing Ark Luna programs. It has a stripped down version of Ark Luna, it includes the code for the notepad.exe app that ships in Ark Luna (the OS). The OS is not a traditional OS, but instead a Node JS console app that hosts a website on your localhost. When you visit localhost in your browser, you'll find a full featured Windows XP recreation. Inside is file explorer, a full shell, classic XP games, original notepad, but also an app store of sorts. Any GitHub repo that uses this very repo (arksouthern/lib-ark-luna-starter) is a program you can install from the app store.
   
-<img src="demo.png">
+<img src="demo-2.png">
   
 ## Get Started
 ### Install Dependencies
