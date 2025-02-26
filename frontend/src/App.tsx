@@ -203,10 +203,6 @@ function WinXp() {
                     class=" flex-1 flex items-center max-w-36 rounded-[.13rem] h-5 text-[0.62rem] text-white px-2 mt-0.5 bg-[rgb(60,129,243)] [box-shadow:rgba(0,0,0,0.3)_-1px_0px_inset,rgba(255,255,255,0.2)_1px_1px_1px_inset] hover:bg-[rgb(83,163,255)] active:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] active:bg-[rgb(30,82,183)] aria-selected:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] aria-selected:bg-[rgb(30,82,183)]"
                   >
                     {app.taskbar}
-                    {/* <img class="h-[.95rem] w-[.95rem] mr-1" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA8UlEQVR42pWSsQ2DMBBFrYiNbhZqqngFWlfs4G0YwHVWQKIKZZTC8b/kHHMYSCx9YYHf88dgTDH6vo/DMJzG7A0Izob3PrZtG48Fz/tuIMC1KtECYwOnFAAkohylcBkqYbIxLsvC8xACt8BmqoWLNj3waQHRO4ljicC4zvOcJYXApRtY7leVITHhKwGMTNONJVnA7x48V9WvICnhlQBwSLtTWiQCaSDVAWIOcNOg6zqub+jdABnHkcNnwVK/38A58zk0m4EyGq6eAcDL9RGbpuEAktTgjUAk8iPpz6bhqkC+huxYAho+FODBr6kKcPOfvACzZogqWb89XgAAAABJRU5ErkJggg==" alt="Internet Explorer" />
-                  <A.ProgramTitle class="text-nowrap overflow-hidden text-ellipsis">
-                    {app.App.name}
-                  </A.ProgramTitle> */}
                   </A.TaskProgram> : <></>
                   }</>)
             }</For>
@@ -218,14 +214,6 @@ function WinXp() {
               <PopoverTrigger class='hover:cursor-auto'>
                 <img class="h-[.95rem] w-[.95rem] mr-1" src="/src/assets/shield.png" alt="Alerts" />
               </PopoverTrigger>
-              {/* content: "";
-  position: absolute;
-  left: 5px;
-  top: 2px;
-  transform: rotate(45deg);
-  height: 8px;
-  width: 2px;
-  background-color: rgb(170, 170, 170);*/}
               <PopoverContent class=' relative  text-xs
               before:absolute before:block before:w-0 before:h-0 before:right-[14px] before:-bottom-[19px] before:border-solid 
               before:[border-width:0px_19px_19px_0px] before:[border-color:transparent_black_transparent_transparent]
@@ -339,8 +327,6 @@ function RightClickMenu(props: { children: any, prog: Prog }) {
           <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
             <span class="w-4"></span><span>Properties</span>
           </ContextMenuItem>
-
-
         </ContextMenuContent>
       </ContextMenuPortal>
     </ContextMenu>
@@ -397,8 +383,6 @@ function StartMenuContent() {
                   <img class='h-[30px] w-[30px]' src={sm.icon} />
                   <p class='ml-[3px] pr-2  font-bold  '>
                     {sm.name ? sm.name : "Untitled Program"}
-                    {/* <br />
-                    <span class='text-[rgb(175,175,175)] font-normal'>Description</span> */}
                   </p>
                 </A.ProgramItemImportant>
               </XpRightClickMenu>
@@ -502,7 +486,6 @@ function StartMenuContent() {
                 </Show>
               </HoverCardContent>
             </HoverCard>
-
             <A.PcItem onClick={() => {
               openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Pictures" } })
               setStartOpen(false)
@@ -642,121 +625,6 @@ function AllProgramsRecursive(props: { sm: Sm, setHoverCardMount: Setter<true | 
 
   )
 }
-
-function DesktopRightClickMenu(props: { children: any }) {
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger class="flex-1 ">
-        {props.children}
-      </ContextMenuTrigger>
-      <ContextMenuPortal>
-        <ContextMenuContent style={{ "box-shadow": "rgb(100, 100, 100) 2px 2px 1px" }} class=' outline-none text-sm  rounded-none bg-white border-[#808080] border p-0.5 w-40'>
-
-          <ContextMenuSub overlap>
-            <ContextMenuSubTrigger
-              class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none"
-            ><span class="w-4"></span><span>Arrange Icons By</span></ContextMenuSubTrigger>
-            <ContextMenuPortal>
-              <ContextMenuSubContent style={{ "box-shadow": "rgb(100, 100, 100) 2px 2px 1px" }} class='outline-none text-sm -mt-[3px] rounded-none bg-white border-[#808080] border p-0.5 w-40'>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Name</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Size</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Type</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Modified</span>
-                </ContextMenuItem>
-
-                <ContextMenuSeparator class="mx-0.5" />
-
-                <ContextMenuItem disabled class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Show in Groups</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Auto Arrange</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Align to Grid</span>
-                </ContextMenuItem>
-              </ContextMenuSubContent>
-            </ContextMenuPortal>
-          </ContextMenuSub>
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Refresh</span>
-          </ContextMenuItem>
-
-          <ContextMenuSeparator class="mx-0.5" />
-
-          <ContextMenuItem disabled class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Paste</span>
-          </ContextMenuItem>
-          <ContextMenuItem disabled class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Paste Shortcut</span>
-          </ContextMenuItem>
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Undo Move</span>
-          </ContextMenuItem>
-          <ContextMenuSeparator class="mx-0.5" />
-
-          <ContextMenuSub overlap>
-            <ContextMenuSubTrigger
-              class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none"
-            ><span class="w-4"></span><span>New</span></ContextMenuSubTrigger>
-            <ContextMenuPortal>
-              <ContextMenuSubContent style={{ "box-shadow": "rgb(100, 100, 100) 2px 2px 1px" }} class='outline-none text-sm rounded-none bg-white border-[#808080] border p-0.5 w-52'>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Folder</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Shortcut</span>
-                </ContextMenuItem>
-
-                <ContextMenuSeparator class="mx-0.5" />
-
-
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Briefcase</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Bitmap Image</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Wordpad Document</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Rich Text Document</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Text Document</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Wave Sound</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Compressed (zipped) Folder</span>
-                </ContextMenuItem>
-              </ContextMenuSubContent>
-            </ContextMenuPortal>
-          </ContextMenuSub>
-
-          <ContextMenuSeparator class="mx-0.5" />
-
-          <ContextMenuItem onClick={() => openApp({ program: "@arksouthern/luna.settings.display", params: {} as any })} class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Properties</span>
-          </ContextMenuItem>
-
-
-
-        </ContextMenuContent>
-      </ContextMenuPortal>
-    </ContextMenu>
-  )
-}
-
 const WIN_MARGIN = 1;
 const PIX_TO_REM = 16;
 const subToRem = (pix: number, cache: number) =>
@@ -767,14 +635,14 @@ onmousemove = (e) => {
     e.stopImmediatePropagation()
     e.preventDefault()
     const { cache, item } = folderMap.itemMoving
-    item.app.placeX = subToRem(e.clientX, cache.x) // * props.zoom
-    item.app.placeY = subToRem(e.clientY, cache.y) // * /*props.zoom*/1
+    item.app.placeX = subToRem(e.clientX, cache.x)
+    item.app.placeY = subToRem(e.clientY, cache.y)
   }
   else if (folderMap.windowMoving) {
     e.stopImmediatePropagation()
     e.preventDefault()
-    folderMap.window.x = subToRem(e.clientX, folderMap.windowMoving.cache.x) // * /*props.zoom*/1
-    folderMap.window.y = subToRem(e.clientY, folderMap.windowMoving.cache.y) // * /*props.zoom*/1
+    folderMap.window.x = subToRem(e.clientX, folderMap.windowMoving.cache.x)
+    folderMap.window.y = subToRem(e.clientY, folderMap.windowMoving.cache.y)
   }
   else if (folderMap.itemResizing) {
     e.stopImmediatePropagation()
@@ -782,7 +650,6 @@ onmousemove = (e) => {
     const { cache, item } = folderMap.itemResizing
     console.log(e.clientX, cache.x)
     const x = subToRem(e.clientX, cache.x)
-    // console.log(e.clientX, cache.x)
     const y = subToRem(e.clientY, cache.y)
     if (cache.sizing == 'w') {
       item.app.sizeX = x
@@ -805,11 +672,6 @@ onmouseup = (e) => {
 setInterval(() => store.time = new Date, 10 * 1000)
 
 const Main: Component = () => {
-  // return <Destination showWhenConnected={
-  // <ProgPj64 app={{view: {as: 'maximized'}, App: ProgWord, params: {openPath: "C:\\Users\\akili\\Downloads\\Mega Man 64 (USA)\\Mega Man 64 (USA).n64"}, placeX: 0, placeY: 0, zIndex: 1}} />
-  // <ProgAppLibrary app={{view: {as: 'maximized'}, App: ProgWord, params: {}, placeX: 0, placeY: 0, zIndex: 1}} />
-  // <ProgEditor app={{view: {as: 'maximized'}, App: ProgWord, params: {openPath: "C:\\Users\\akili\\Documents\\GitHub\\--\\Git\\app-xp-ark\\frontend\\src\\Store.tsx"}, placeX: 0, placeY: 0, zIndex: 1}} />
-  // } />
   return (
     <Destination
       showWhenConnected={
