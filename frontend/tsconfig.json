@@ -12,7 +12,7 @@
       "vite/client"
     ],
     "noEmit": true,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "paths": {
       "~/*": [
         "./src/*"

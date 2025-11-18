@@ -408,6 +408,10 @@ html, body, :root {
   cursor: var(--xp-cursor);
   --webkit-user-select: none;
   user-select: none;
+  overscroll-behavior: contain;
+}
+body * {
+  overscroll-behavior: none;
 }
 
 .cursor-default {

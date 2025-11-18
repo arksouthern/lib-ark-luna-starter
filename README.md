@@ -2,7 +2,11 @@
 ## Quick About
 This is an SDK for developing Ark Luna programs. It has a stripped down version of Ark Luna, it includes the code for the notepad.exe app that ships in Ark Luna (the OS). The OS is not a traditional OS, but instead a Node JS console app that hosts a website on your localhost. When you visit localhost in your browser, you'll find a full featured Windows XP recreation. Inside is file explorer, a full shell, classic XP games, original notepad, but also an app store of sorts. Any GitHub repo that uses this very repo (arksouthern/lib-ark-luna-starter) is a program you can install from the app store.
   
-<img src="demo-2.png">
+Here are some of these programs we have been able to develop using the APIs &amp; UI components in this SDK:
+  
+
+| <img src="./readme/media-player-viz-view.jpg" /> | <img src="./readme/explorer-multi-window.jpg" /> |
+| --- | --- |
   
 ## Get Started
 ### Install Dependencies
@@ -43,11 +47,30 @@ If you've run both commands you can [click this link](http://localhost:3000/?htt
 - By exporting the `api` constant, you can offer type safe POST APIs
 - By exporting the `any` constant, you can offer catch-all HTTP APIs
 - By exporting the `ws` constant, you can offer type safe WebSocket APIs
-### How can I deploy my app?
-1. Create a GitHub repo `your-username/your-app-name`
-2. Rename your app `arksouthern.luna.note` to `your-username.your-app-name`
-3. Run the deploy script `node deploy-program.js`
-4. This will place your app in a Git branch `luna`
-5. Push to GitHub
-6. From Luna Stella you can install the app via your repo link
-7. Luna Stella will install from any GitHub repo which has a `luna` branch
+### What built-in APIs can my frontend call?
+- read files, open file in default program, query default programs
+- create dialogs, modals, sub windows, multi-instance apps
+- add keyboard shortcuts
+- All available from `frontend/src/lib/luna.ts`
+### Code examples you can run now:
+
+#### A simple Run app dialog
+[Visit the open source repo.](https://github.com/arksouthern/arksouthern.luna.run)
+  
+<img src="./readme/run-dialog-multi-window.jpg" />
+  
+#### A contacts manager, file reader / writer
+[Visit the open source repo.](https://github.com/arksouthern/arksouthern.luna.contacts)
+  
+<img src="./readme/contacts-multi-window.jpg" />
+  
+#### DOS / retro Windows emulator
+[Visit the open source repo.](https://github.com/arksouthern/arksouthern.luna.dos)
+
+<img src="./readme/dos-or-windows-emulation.jpg" />
+  
+#### Full explorer file folder browser
+[Visit the open source repo.](https://github.com/arksouthern/arksouthern.luna.explore)
+  
+<img src="./readme/explorer-multi-window.jpg" />
+  

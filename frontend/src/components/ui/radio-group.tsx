@@ -29,7 +29,7 @@ const RadioGroupItem = <T extends ValidComponent = "div">(
   return (
     <RadioGroupPrimitive.Item class={cn("flex items-center space-x-2", local.class)} {...others}>
       <RadioGroupPrimitive.ItemInput />
-      <RadioGroupPrimitive.ItemControl aria-disabled={props.disabled}  class="aspect-square size-4 aria-disabled:[border:1px_solid_#cac8bb] aria-disabled:[background:#fff] aria-disabled:hover:[box-shadow:none] bg-[linear-gradient(135deg,#dcdcd7,#fff)] active:[background:linear-gradient(135deg,_rgba(176,_176,_167,_1)_0%,_rgba(227,_225,_210,_1)_100%)] active:[box-shadow:none] hover:[box-shadow:inset_-2px_-2px_#f8b636,_inset_2px_2px_#fedf9c] rounded-full border border-[#1d5281] text-primary  disabled:cursor-not-allowed ">
+      <RadioGroupPrimitive.ItemControl aria-disabled={props.disabled}  class="aspect-square size-3 aria-disabled:[border:1px_solid_#cac8bb] aria-disabled:[background:#fff] aria-disabled:hover:[box-shadow:none] bg-[linear-gradient(135deg,#dcdcd7,#fff)] active:[background:linear-gradient(135deg,_rgba(176,_176,_167,_1)_0%,_rgba(227,_225,_210,_1)_100%)] active:[box-shadow:none] hover:[box-shadow:inset_-2px_-2px_#f8b636,_inset_2px_2px_#fedf9c] rounded-full border border-[#1d5281] text-primary  disabled:cursor-not-allowed ">
         <RadioGroupPrimitive.ItemIndicator class=" flex h-full items-center justify-center ">
         <Show when={!props.disabled} fallback={
             <img class="size-1.5 fill-current text-current" src="src/assets/radiodotdisabled.svg"/>

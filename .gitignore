@@ -1,3 +1,8 @@
-dist
-.DS_Store
 node_modules
+*.jsdos
+*-x
+node_modules
+dist
+!assets.zip
+/frontend/src/programs/v1/*
+!/frontend/src/programs/v1/here.txt

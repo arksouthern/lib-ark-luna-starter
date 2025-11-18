@@ -1,12 +1,12 @@
 import { createMutable } from "solid-js/store"
-import { App, DesktopRecent, Prog, Shortcut, Sm, XpXy } from "./Types";
+import { App, DesktopRecent, Prog, Shortcut, Sm, AppWindow, CompactContact } from "./Types"
 
 export const
 
     folderMap = createMutable({
         itemMoving: null as null | {
             item: App
-            cache: { x: number, y: number };
+            cache: { x: number, y: number }
         },
         itemResizing: null as null | {
             item: App
@@ -26,25 +26,25 @@ export const
     ,
     store = createMutable({
         open: [
-            // { zIndex: ++zIndex.value, placeX: 47, placeY: 1, sizeX: 24, sizeY: 20, App: ProgNotepad, view: { as: "restore" }, params: {} },
-            // { zIndex: ++zIndex.value, placeX: 8, placeY: 2, sizeX: 48, sizeY: 24, App: ProgFileExplorer, view: { as: "restore" }, params: {} },
-            // { zIndex: ++zIndex.value, placeX: 3, placeY: 12, sizeX: 38, sizeY: 32, App: ProgExpression, view: { as: "restore" }, params: {} },
-            // { zIndex: ++zIndex, placeX: 3, placeY: 12, sizeX: 38, sizeY: 32, App: ProgExcel, params: {}},
-            // { zIndex: ++zIndex, placeX: 3, placeY: 12, sizeX: 38, sizeY: 32, App: ProgImgViewer, params: {} },
-
-        ] as XpXy[],
+        ] as AppWindow[],
         time: new Date,
+        desktopOptions: {
+            desktopIconsHide: false,
+        },
         desktopProgs: [] as Prog[],
         selectedItems: [] as number[],
         desktopImage: {},
         taskPins: [] as Prog[],
-        desktopOpener: {} as {extensions: Record<string, {prog: string, icon: string}>},
+        binList: [] as Prog[],
+        desktopOpener: {} as { extensions: Record<string, { prog: string, icon: string }> },
         desktopStartProgs: [] as Sm[],
+        systemMemory: { freeMem: 0, totalMem: 0 },
+        user: {} as CompactContact,
         desktopRecents: {
             "recentPrograms": [],
             "recentFiles": [],
             "pinnedShortcuts": []
-          } as DesktopRecent
+        } as DesktopRecent
     })
 
 // @ts-ignore

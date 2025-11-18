@@ -1,120 +1,156 @@
-import { createEffect, For, Show, type Component, onMount, createSignal, Setter } from 'solid-js'
+import { createEffect, For, Show, type Component, onMount, createSignal, Setter, ErrorBoundary, onCleanup } from 'solid-js'
 import { Destination } from './lib/destination'
-import { API, getRoot } from './lib/url'
+import { API } from './lib/url'
 import { folderMap, store, zIndex } from './Store'
 import { Prog, Sm, SmFolder, SmShortcut } from './Types'
-import { A } from './lib/ax'
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from './components/ui/context-menu'
-import { openApp, openFile } from './lib/luna'
+import A from '@arksouthern/jsx/ax'
+import MatchAs from '@arksouthern/jsx/mx'
+import { clipboardFsCopy, closeAppWindow, desktopCoreRefresh, kbdShortcutOn, openApp, openFile, queryFileOpener } from './lib/luna'
 import { connectWebSocket } from './lib/ws'
 import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './components/ui/hover-card'
 import { XpRightClickMenu, XpRightClickMenuDivider, XpRightClickMenuItem } from './components/luna/right-click-menu'
+import { createDialog } from './components/luna/dialog'
+import { XpTitleButtons, XpTitleButtonsClose } from './components/luna/title-buttons'
+import { XpButton } from './components/luna/button'
 
 const [startOpen, setStartOpen] = createSignal(false)
 
+function getFileIconImg(props: { file: { name: string } }) {
+  const { name } = props.file
+  const ico = (id: number) => `/src/assets/ico/${id}.ico`
+  if (name.startsWith("."))
+    return ico(523)
+  const opener = queryFileOpener({ openPath: name })
+  if (opener.as == "opener") return opener.opener.icon
+  return ico(1070)
+}
 
-function WinXp() {
+function LunaOsCore() {
 
-  createEffect(async () => {
-    const { progImg, progList, progPinList, progOpener, progStartMenu, progRecents } = await API.loadDesktopProgs({})
-    store.desktopProgs = progList
-    store.taskPins = progPinList
-    store.desktopOpener = progOpener
-    store.desktopStartProgs = progStartMenu
-    store.desktopRecents = progRecents
-    if (progImg["background-image"]) progImg["background-image"] = progImg["background-image"].replace("R00T", getRoot())
-    store.desktopImage = progImg
+  onMount(async () => {
+    const forceAppImportant = { app: { get zIndex() { return zIndex.value } } as any }
+    kbdShortcutOn({
+      keys: ["Win", "R"],
+      app: forceAppImportant,
+      callback: () => openApp({ program: "@arksouthern/luna.run", params: { openPath: "" } })
+    })
+    kbdShortcutOn({
+      keys: ["Win", "E"],
+      app: forceAppImportant,
+      callback: () => openApp({ program: "@arksouthern/luna.explore", params: { openPath: "" } })
+    })
+
+    await desktopCoreRefresh()
 
     const startupApps = store.desktopStartProgs.find((sm) => sm.name == "Startup" && sm.as == "folder")! as SmFolder
-    for (const app of startupApps.children) {
+    for (const app of (startupApps?.children || []))
       if (app.as == "shortcut") openApp({ program: app.prog, params: app.params })
-    }
-    createEffect(() => {
-      API.writeDesktopFile({ data: JSON.stringify(store.desktopRecents), path: "../data/Desktop/Recent.di.json" })
-    })
-  })
 
-  onMount(() => {
+    await new Promise((r) => setTimeout(r, 2 * 1000))
+
     connectWebSocket()
   })
 
+  createEffect(() => {
+    // Debounce writes so the API is called only after 5s of no changes
+    const data = JSON.stringify(store.desktopRecents)
+    const id = setTimeout(() => {
+      API.writeDesktopFile({ data, path: "../data/Desktop/Recent.di.json" })
+    }, 5_000)
+    onCleanup(() => clearTimeout(id))
+  })
+
+  const [ErrorDialog, setErrDialog] = createDialog({ offsetX: 2, offsetY: 2, sizeX: 24, sizeY: 18.5, app: { placeX: 0, placeY: 0, sizeX: 0, sizeY: 0, dialog: {} as any } as any })
+
   return (
 
-    <div
+    <A.LunaDesktopComplete
       class="h-screen overscroll-contain flex text-black"
       style={store.desktopImage}
     >
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0">
-        <defs>
-          {/* <!-- 16-bit color (5-6-5 RGB) --> */}
-          <filter id="16bit">
-            {/* <!-- R5 G6 B5 simulation --> */}
-            <feComponentTransfer>
-              <feFuncR type="discrete" tableValues="0 0.03225806 0.06451613 0.09677419 0.12903226 0.16129032 0.19354839 0.22580645 0.25806452 0.29032258 0.32258065 0.35483871 0.38709677 0.41935484 0.45161290 0.48387097 0.51612903 0.54838710 0.58064516 0.61290323 0.64516129 0.67741935 0.70967742 0.74193548 0.77419355 0.80645161 0.83870968 0.87096774 0.90322581 0.93548387 0.96774194 1" />
-              <feFuncG type="discrete" tableValues="0 0.015873 0.031746 0.047619 0.063492 0.079365 0.095238 0.111111 0.126984 0.142857 0.158730 0.174603 0.190476 0.206349 0.222222 0.238095 0.253968 0.269841 0.285714 0.301587 0.317460 0.333333 0.349206 0.365079 0.380952 0.396825 0.412698 0.428571 0.444444 0.460317 0.476190 0.492063 0.507937 0.523810 0.539683 0.555556 0.571429 0.587302 0.603175 0.619048 0.634921 0.650794 0.666667 0.682540 0.698413 0.714286 0.730159 0.746032 0.761905 0.777778 0.793651 0.809524 0.825397 0.841270 0.857143 0.873016 0.888889 0.904762 0.920635 0.936508 0.952381 0.968254 0.984127 1" />
-              <feFuncB type="discrete" tableValues="0 0.03225806 0.06451613 0.09677419 0.12903226 0.16129032 0.19354839 0.22580645 0.25806452 0.29032258 0.32258065 0.35483871 0.38709677 0.41935484 0.45161290 0.48387097 0.51612903 0.54838710 0.58064516 0.61290323 0.64516129 0.67741935 0.70967742 0.74193548 0.77419355 0.80645161 0.83870968 0.87096774 0.90322581 0.93548387 0.96774194 1" />
-            </feComponentTransfer>
-          </filter>
+      <A.DisplayModificationColorBitDepth>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0">
+          <defs>
+            {/* <!-- 16-bit color (5-6-5 RGB) --> */}
+            <filter id="16bit">
+              {/* <!-- R5 G6 B5 simulation --> */}
+              <feComponentTransfer>
+                <feFuncR type="discrete" tableValues="0 0.03225806 0.06451613 0.09677419 0.12903226 0.16129032 0.19354839 0.22580645 0.25806452 0.29032258 0.32258065 0.35483871 0.38709677 0.41935484 0.45161290 0.48387097 0.51612903 0.54838710 0.58064516 0.61290323 0.64516129 0.67741935 0.70967742 0.74193548 0.77419355 0.80645161 0.83870968 0.87096774 0.90322581 0.93548387 0.96774194 1" />
+                <feFuncG type="discrete" tableValues="0 0.015873 0.031746 0.047619 0.063492 0.079365 0.095238 0.111111 0.126984 0.142857 0.158730 0.174603 0.190476 0.206349 0.222222 0.238095 0.253968 0.269841 0.285714 0.301587 0.317460 0.333333 0.349206 0.365079 0.380952 0.396825 0.412698 0.428571 0.444444 0.460317 0.476190 0.492063 0.507937 0.523810 0.539683 0.555556 0.571429 0.587302 0.603175 0.619048 0.634921 0.650794 0.666667 0.682540 0.698413 0.714286 0.730159 0.746032 0.761905 0.777778 0.793651 0.809524 0.825397 0.841270 0.857143 0.873016 0.888889 0.904762 0.920635 0.936508 0.952381 0.968254 0.984127 1" />
+                <feFuncB type="discrete" tableValues="0 0.03225806 0.06451613 0.09677419 0.12903226 0.16129032 0.19354839 0.22580645 0.25806452 0.29032258 0.32258065 0.35483871 0.38709677 0.41935484 0.45161290 0.48387097 0.51612903 0.54838710 0.58064516 0.61290323 0.64516129 0.67741935 0.70967742 0.74193548 0.77419355 0.80645161 0.83870968 0.87096774 0.90322581 0.93548387 0.96774194 1" />
+              </feComponentTransfer>
+            </filter>
 
-          {/* <!-- 8-bit color (3-3-2 RGB) --> */}
-          <filter id="8bit">
-            {/* <!-- R3 G3 B2 simulation --> */}
-            <feComponentTransfer>
-              <feFuncR type="discrete" tableValues="0 0.14285714 0.28571429 0.42857143 0.57142857 0.71428571 0.85714286 1" />
-              <feFuncG type="discrete" tableValues="0 0.14285714 0.28571429 0.42857143 0.57142857 0.71428571 0.85714286 1" />
-              <feFuncB type="discrete" tableValues="0 0.33333333 0.66666667 1" />
-            </feComponentTransfer>
-          </filter>
+            {/* <!-- 8-bit color (3-3-2 RGB) --> */}
+            <filter id="8bit">
+              {/* <!-- R3 G3 B2 simulation --> */}
+              <feComponentTransfer>
+                <feFuncR type="discrete" tableValues="0 0.14285714 0.28571429 0.42857143 0.57142857 0.71428571 0.85714286 1" />
+                <feFuncG type="discrete" tableValues="0 0.14285714 0.28571429 0.42857143 0.57142857 0.71428571 0.85714286 1" />
+                <feFuncB type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+              </feComponentTransfer>
+            </filter>
 
-          {/* <!-- 4-bit color (16 colors) --> */}
-          <filter id="4bit">
-            <feComponentTransfer>
-              <feFuncR type="discrete" tableValues="0 0.33333333 0.66666667 1" />
-              <feFuncG type="discrete" tableValues="0 0.33333333 0.66666667 1" />
-              <feFuncB type="discrete" tableValues="0 0.33333333 0.66666667 1" />
-            </feComponentTransfer>
-          </filter>
+            {/* <!-- 4-bit color (16 colors) --> */}
+            <filter id="4bit">
+              <feComponentTransfer>
+                <feFuncR type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+                <feFuncG type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+                <feFuncB type="discrete" tableValues="0 0.33333333 0.66666667 1" />
+              </feComponentTransfer>
+            </filter>
 
-          {/* <!-- 1-bit color (black and white) --> */}
-          <filter id="1bit">
-            <feComponentTransfer>
-              <feFuncR type="discrete" tableValues="0 1" />
-              <feFuncG type="discrete" tableValues="0 1" />
-              <feFuncB type="discrete" tableValues="0 1" />
-            </feComponentTransfer>
-          </filter>
-        </defs>
-      </svg>
-      <div inert class='h-screen w-screen fixed top-0 left-0 z-[999999]' style={{ 
-        // "--webkit-backdrop-filter": "url(#1bit)", "backdrop-filter": "url(#1bit)" 
-      }} />
+            {/* <!-- 1-bit color (black and white) --> */}
+            <filter id="1bit">
+              <feComponentTransfer>
+                <feFuncR type="discrete" tableValues="0 1" />
+                <feFuncG type="discrete" tableValues="0 1" />
+                <feFuncB type="discrete" tableValues="0 1" />
+              </feComponentTransfer>
+            </filter>
+          </defs>
+        </svg>
+        {/* For applying color space reduction in supporting browsers. */}
+        {/* 
+          <div 
+            inert 
+            class='h-screen w-screen fixed top-0 left-0 z-[999999]' 
+            style={{ "--webkit-backdrop-filter": "url(#1bit)", "backdrop-filter": "url(#1bit)" }} 
+          /> 
+        */}
+      </A.DisplayModificationColorBitDepth>
+      {/* This id used for `window.` access by `createDialog` in dialog.tsx */}
       <div id='desktopWindow' class="flex-1 text-xs">
         <XpRightClickMenu xpRightClickMenuItemList={<>
           <XpRightClickMenuItem title="Arrange Icons By" xpRightClickMenuItemList={<>
-            <XpRightClickMenuItem title="TODO Name" />
-            <XpRightClickMenuItem title="TODO Size" />
-            <XpRightClickMenuItem title="TODO Type" />
-            <XpRightClickMenuItem title="TODO Modified" />
+            <XpRightClickMenuItem disabled title="TODO Name" />
+            <XpRightClickMenuItem disabled title="TODO Size" />
+            <XpRightClickMenuItem disabled title="TODO Type" />
+            <XpRightClickMenuItem disabled title="TODO Modified" />
             <XpRightClickMenuDivider />
             <XpRightClickMenuItem disabled title="Show in Groups" />
-            <XpRightClickMenuItem title="TODO Auto Arrange" />
-            <XpRightClickMenuItem indicator='checked' title="TODO Align to Grid" />
+            <XpRightClickMenuItem disabled title="TODO Auto Arrange" />
+            <XpRightClickMenuItem indicator='checked' title="Align to Grid" />
             <XpRightClickMenuDivider />
-            <XpRightClickMenuItem indicator='checked' title="TODO Show Desktop Icons" />
+            <XpRightClickMenuItem
+              indicator={store.desktopOptions.desktopIconsHide ? undefined : "checked"}
+              title="Show Desktop Icons"
+              onClick={() => store.desktopOptions.desktopIconsHide = !store.desktopOptions.desktopIconsHide}
+            />
           </>} />
-          <XpRightClickMenuItem title="TODO Refresh" />
+          <XpRightClickMenuItem title="Refresh" onClick={desktopCoreRefresh} />
           <XpRightClickMenuDivider />
           <XpRightClickMenuItem title="TODO Paste" />
           <XpRightClickMenuItem title="TODO Paste Shortcut" />
           <XpRightClickMenuDivider />
-          <XpRightClickMenuItem title="TODO Properties" />
+          <XpRightClickMenuItem title="Properties" onClick={() => openApp({ program: "@arksouthern/luna.settings.display", params: { openPath: "" } })} />
         </>}>
           <A.DesktopApps style={{ "text-shadow": "black 0px 1px 1px" }} class='absolute top-0 flex flex-col left-0 h-full w-full text-white text-xs text-center'>
             <A.AppColumn class='px-8 py-7 flex-1 flex gap-6'>
               <div class='grid [grid:repeat(7,auto)_/_auto-flow] space-x-2'>
                 <Show
-                  when={store.desktopProgs.length}
+                  when={store.desktopProgs.length && !store.desktopOptions.desktopIconsHide}
                 >
                   <For
                     each={store.desktopProgs}
@@ -153,11 +189,78 @@ function WinXp() {
           </A.DesktopApps>
         </XpRightClickMenu>
         <For each={store.open}>{
-          Prog => <Prog.App app={Prog} />
+          Prog => (
+            <ErrorBoundary
+              fallback={
+                (error, retry) => {
+                  console.error(error)
+                  return (
+                    <>
+                      {(setErrDialog.dialogShow(), "")}
+                      <ErrorDialog title={<>
+                        <A.TitleText class="flex-1 pointer-events-none pr-1 tracking-[.032rem] overflow-hidden whitespace-nowrap text-ellipsis">
+                          Ark Luna Error Reporting
+                        </A.TitleText>
+                        <XpTitleButtons>
+                          <XpTitleButtonsClose onClick={() => closeAppWindow({ app: Prog })} />
+                        </XpTitleButtons>
+                      </>}>
+                        <A.ErrBody class='bg-[#EBE9DA] text-xs h-full flex-1'>
+                          <A.Header class='bg-white px-6 py-3 font-semibold flex'>
+                            <p>
+                              Your program has encountered a problem and needs to close.
+                              We are sorry for your inconvience.
+                            </p>
+                            <A.Icon class='w-20' />
+                          </A.Header>
+                          <A.BorderY class='border-y border-t-[#666] border-b-[#eee]' />
+                          <A.TextContent class='px-6 py-3'>
+                            <p>
+                              If you were in the middle of something, the information you were working on might be lost.
+                            </p>
+                            <br />
+                            <p>
+                              <b>
+                                Please tell us about this problem.
+                              </b>
+                            </p>
+                            <p>
+                              We have created an error report that you can send to help us improve our program.
+                              We will treat this report as confidential and anonymous.
+                            </p>
+                            <br />
+                            <p>
+                              To see what this error report contains, open your browser console.
+                            </p>
+                            <br />
+                            <A.Btns class='flex gap-1'>
+                              <A.Spacer class='flex-1' />
+                              <XpButton class='min-w-0 p-0 w-28' disabled>
+                                Send Error Report
+                              </XpButton>
+                              <XpButton class='min-w-0 p-0 w-20' autofocus onClick={() => closeAppWindow({ app: Prog })}>
+                                Don't Send
+                              </XpButton>
+                            </A.Btns>
+                          </A.TextContent>
+                        </A.ErrBody>
+                      </ErrorDialog>
+                    </>
+                  )
+                }}
+            >
+              <Prog.App app={Prog} />
+              <For each={Prog.subWindows}>
+                {subWin => (
+                  <>{subWin.content}</>
+                )}
+              </For>
+            </ErrorBoundary>
+          )
         }</For>
 
         <A.XpTaskbar class="z-[99999] h-7 absolute left-0 right-0 bottom-0 flex" style={{ "background-image": `linear-gradient(rgb(31, 47, 134) 0px, rgb(49, 101, 196) 3%, rgb(54, 130, 229) 6%, rgb(68, 144, 230) 10%, rgb(56, 131, 229) 12%, rgb(43, 113, 224) 15%, rgb(38, 99, 218) 18%, rgb(35, 91, 214) 20%, rgb(34, 88, 213) 23%, rgb(33, 87, 214) 38%, rgb(36, 93, 219) 54%, rgb(37, 98, 223) 86%, rgb(36, 95, 220) 89%, rgb(33, 88, 212) 92%, rgb(29, 78, 192) 95%, rgb(25, 65, 165) 98%)` }}>
-          <A.MainBar class="flex-1 flex items-center">
+          <A.TaskbarCore class="flex-1 flex items-center">
             <Popover open={startOpen()} onOpenChange={setStartOpen}>
               <PopoverTrigger class='p-0 m-0 h-7'>
                 <A.StartBtn class="h-full relative hover:brightness-110 cursor-pointer w-24">
@@ -167,7 +270,7 @@ function WinXp() {
                   </A.StartText>
                 </A.StartBtn>
               </PopoverTrigger>
-              <PopoverContent class='top-[9px] -ml-2 mb-3 p-0 rounded-none border-none bg-transparent'>
+              <PopoverContent style={{ "z-index": zIndex.value + 1 }} class='top-[9px] -ml-2 mb-3 p-0 rounded-none border-none bg-transparent'>
                 <StartMenuContent />
               </PopoverContent>
             </Popover>
@@ -193,20 +296,66 @@ function WinXp() {
             <For each={store.open}>{
               app => (
                 <>
-                  {app.taskbar ? <A.TaskProgram
-                    aria-selected={app.zIndex == zIndex.value}
-                    onClick={() => {
-                      app.zIndex = ++zIndex.value
-                      if (app.view.as == "restore") app.view = { as: "minimized" }
-                      else app.view = { as: "restore" }
-                    }}
-                    class=" flex-1 flex items-center max-w-36 rounded-[.13rem] h-5 text-[0.62rem] text-white px-2 mt-0.5 bg-[rgb(60,129,243)] [box-shadow:rgba(0,0,0,0.3)_-1px_0px_inset,rgba(255,255,255,0.2)_1px_1px_1px_inset] hover:bg-[rgb(83,163,255)] active:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] active:bg-[rgb(30,82,183)] aria-selected:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] aria-selected:bg-[rgb(30,82,183)]"
-                  >
-                    {app.taskbar}
-                  </A.TaskProgram> : <></>
-                  }</>)
+                  <MatchAs over={app.taskbar.view} match={{
+                    hidden: () => <></>,
+                    alert: () => <>{(() => { throw new Error("TASKBAR ALERT VIEW MODE UNIMPLEMENTED") })()}</>,
+                    visible: () => (
+                      <XpRightClickMenu xpRightClickMenuItemList={<>
+                        <XpRightClickMenuItem title="Restore" disabled={app.view.as == "restore"} onClick={() => app.view.as = "restore"} />
+                        <XpRightClickMenuItem title="Minimize" disabled={app.view.as == "minimized"} onClick={() => app.view.as = "minimized"} />
+                        <XpRightClickMenuItem title="Maximize" disabled={app.view.as == "maximized"} onClick={() => app.view.as = "maximized"} />
+                        <XpRightClickMenuDivider />
+                        <XpRightClickMenuItem disabled title="TODO Pin to Taskbar" onClick={() => { }} />
+                        <XpRightClickMenuItem disabled title="TODO Pin to Start menu" onClick={() => { }} />
+                        <XpRightClickMenuDivider />
+                        <XpRightClickMenuItem title="Close" onClick={() => closeAppWindow({ app })} />
+                      </>}>
+                        <A.TaskProgram
+                          aria-selected={app.zIndex == zIndex.value}
+                          onClick={() => {
+                            if (app.zIndex != zIndex.value)
+                              app.zIndex = ++zIndex.value
+                            else if (app.view.as == "restore") app.view = { as: "minimized" }
+                            else app.view = { as: "restore" }
+                          }}
+                          class="flex-1 flex items-center max-w-36 rounded-[.13rem] h-5 text-[0.62rem] text-white px-2 mt-0.5 bg-[rgb(60,129,243)] [box-shadow:rgba(0,0,0,0.3)_-1px_0px_inset,rgba(255,255,255,0.2)_1px_1px_1px_inset] hover:bg-[rgb(83,163,255)] active:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] active:bg-[rgb(30,82,183)] aria-selected:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] aria-selected:bg-[rgb(30,82,183)]"
+                        >
+                          {app.taskbar.content}
+                          {/* 
+                        <A.ProgramTitle class="text-nowrap overflow-hidden text-ellipsis">
+                          {app.App.name}
+                        </A.ProgramTitle> 
+                      */}
+                        </A.TaskProgram>
+                      </XpRightClickMenu>
+                    )
+                  }} />
+                  <For each={app.subWindows}>
+                    {subWin => (
+                      <MatchAs over={subWin.taskbar.view} match={{
+                        hidden: () => <></>,
+                        alert: () => <>{(() => { throw new Error("TASKBAR ALERT VIEW MODE UNIMPLEMENTED") })()}</>,
+                        visible: () => (
+                          <A.TaskProgram
+                            aria-selected={subWin.zIndex == zIndex.value}
+                            onClick={() => {
+                              if (subWin.zIndex != zIndex.value)
+                                subWin.zIndex = ++zIndex.value
+                              else if (subWin.view.as == "restore") subWin.view = { as: "minimized" }
+                              else subWin.view = { as: "restore" }
+                            }}
+                            class=" flex-1 flex items-center max-w-36 rounded-[.13rem] h-5 text-[0.62rem] text-white px-2 mt-0.5 bg-[rgb(60,129,243)] [box-shadow:rgba(0,0,0,0.3)_-1px_0px_inset,rgba(255,255,255,0.2)_1px_1px_1px_inset] hover:bg-[rgb(83,163,255)] active:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] active:bg-[rgb(30,82,183)] aria-selected:[box-shadow:rgba(0,0,0,0.2)_0px_0px_1px_1px_inset,rgba(0,0,0,0.7)_1px_0px_1px_inset] aria-selected:bg-[rgb(30,82,183)]"
+                          >
+                            {subWin.taskbar.content}
+                          </A.TaskProgram>
+                        )
+                      }} />
+                    )}
+                  </For>
+                </>
+              )
             }</For>
-          </A.MainBar>
+          </A.TaskbarCore>
 
 
           <A.AlertsBar class="pl-2.5 ml-2.5 items-center flex border-l border-[rgb(16,66,175)]" style={{ "box-shadow": `rgb(24, 187, 255) 1px 0px 1px 0px inset`, "background-image": `linear-gradient(rgb(12, 89, 185) 1%, rgb(19, 158, 233) 6%, rgb(24, 181, 242) 10%, rgb(19, 155, 235) 14%, rgb(18, 144, 232) 19%, rgb(13, 141, 234) 63%, rgb(13, 159, 241) 81%, rgb(15, 158, 237) 88%, rgb(17, 155, 233) 91%, rgb(19, 146, 226) 94%, rgb(19, 126, 215) 97%, rgb(9, 91, 201) 100%)` }}>
@@ -214,6 +363,16 @@ function WinXp() {
               <PopoverTrigger class='hover:cursor-auto'>
                 <img class="h-[.95rem] w-[.95rem] mr-1" src="/src/assets/shield.png" alt="Alerts" />
               </PopoverTrigger>
+              {/* 
+                content: "";
+                position: absolute;
+                left: 5px;
+                top: 2px;
+                transform: rotate(45deg);
+                height: 8px;
+                width: 2px;
+                background-color: rgb(170, 170, 170);
+              */}
               <PopoverContent class=' relative  text-xs
               before:absolute before:block before:w-0 before:h-0 before:right-[14px] before:-bottom-[19px] before:border-solid 
               before:[border-width:0px_19px_19px_0px] before:[border-color:transparent_black_transparent_transparent]
@@ -251,85 +410,68 @@ function WinXp() {
           </A.AlertsBar>
         </A.XpTaskbar>
       </div>
-    </div>
+    </A.LunaDesktopComplete>
 
   )
 }
 
 function RightClickMenu(props: { children: any, prog: Prog }) {
   return (
-    <ContextMenu>
-      <ContextMenuTrigger class="flex-1 ">
-        {props.children}
-      </ContextMenuTrigger>
-      <ContextMenuPortal>
-        <ContextMenuContent style={{ "box-shadow": "rgb(100, 100, 100) 2px 2px 1px" }} class='outline-none text-sm rounded-none bg-white border-[#808080] border p-0.5 w-40'>
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-            <span class="w-4"></span><span class="font-bold">Open</span>
-          </ContextMenuItem>
-
-          <ContextMenuSub overlap>
-            <ContextMenuSubTrigger
-              class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none"
-            ><span class="w-4"></span><span>Open With</span></ContextMenuSubTrigger>
-            <ContextMenuPortal>
-              <ContextMenuSubContent style={{ "box-shadow": "rgb(100, 100, 100) 2px 2px 1px" }} class='outline-none text-sm rounded-none bg-white border-[#808080] border p-0.5 w-40'>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span class="font-bold">Placeholder</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Placeholder</span>
-                </ContextMenuItem>
-              </ContextMenuSubContent>
-            </ContextMenuPortal>
-          </ContextMenuSub>
-
-          <ContextMenuSeparator class="mx-0.5" />
-
-          <ContextMenuSub overlap>
-            <ContextMenuSubTrigger
-              class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none"
-            ><span class="w-4"></span><span>Send To</span></ContextMenuSubTrigger>
-            <ContextMenuPortal>
-              <ContextMenuSubContent style={{ "box-shadow": "rgb(100, 100, 100) 2px 2px 1px" }} class='outline-none text-sm rounded-none bg-white border-[#808080] border p-0.5 w-40'>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span class="font-bold">Placeholder</span>
-                </ContextMenuItem>
-                <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none ">
-                  <span class="w-4"></span><span>Placeholder</span>
-                </ContextMenuItem>
-              </ContextMenuSubContent>
-            </ContextMenuPortal>
-          </ContextMenuSub>
-
-          <ContextMenuSeparator class="mx-0.5" />
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Cut</span>
-          </ContextMenuItem>
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Copy</span>
-          </ContextMenuItem>
-          <ContextMenuSeparator class="mx-0.5" />
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Create Shortcut</span>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={async () => {
+    <XpRightClickMenu
+      xpRightClickMenuItemList={<>
+        <XpRightClickMenuItem
+          title={<b>Open</b>}
+          onClick={() => {
+            openApp({ program: props.prog.prog, params: props.prog.params })
+          }}
+        />
+        <XpRightClickMenuItem
+          title="Open With"
+          disabled
+        />
+        <XpRightClickMenuDivider />
+        <XpRightClickMenuItem
+          title="Send To"
+          disabled
+        />
+        <XpRightClickMenuDivider />
+        <XpRightClickMenuItem
+          title="TODO Cut"
+          disabled
+        />
+        <XpRightClickMenuItem
+          title="Copy"
+          onClick={() => {
+            clipboardFsCopy({ openPathList: [`../data/Desktop/${props.prog.progName}`] })
+          }}
+        />
+        {/* <XpRightClickMenuItem
+          title="Create Shortcut"
+          disabled
+        /> */}
+        <XpRightClickMenuItem
+          title="Delete"
+          onClick={async () => {
             await API.deleteDesktopProg({ progName: props.prog.progName })
-            const { progImg, progList } = await API.loadDesktopProgs({})
+            const { progList } = await API.loadDesktopProgs({})
             store.desktopProgs = progList
-          }} class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Delete</span>
-          </ContextMenuItem>
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Rename</span>
-          </ContextMenuItem>
-          <ContextMenuSeparator class="mx-0.5" />
-          <ContextMenuItem class="p-0 text-xs focus:bg-[#1660e8] focus:text-white rounded-none">
-            <span class="w-4"></span><span>Properties</span>
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenuPortal>
-    </ContextMenu>
+          }}
+        />
+        <XpRightClickMenuItem
+          title="TODO Rename"
+          disabled
+        />
+        <XpRightClickMenuItem
+          title="Properties"
+          onClick={() => {
+            console.log(props.prog)
+            openApp({ program: "@arksouthern/luna.explore.properties", params: { openPath: `../data/Desktop/${props.prog.progName}` } })
+          }}
+        />
+      </>}
+    >
+      {props.children}
+    </XpRightClickMenu>
   )
 }
 
@@ -347,9 +489,9 @@ function StartMenuContent() {
                  before:w-full before:block
                  before:[background:linear-gradient(to_right,_transparent_0px,_rgba(255,_255,_255,_0.3)_1%,_rgba(255,_255,_255,_0.5)_2%,_rgba(255,_255,_255,_0.5)_95%,_rgba(255,_255,_255,_0.3)_98%,_rgba(255,_255,_255,_0.2)_99%,_transparent_100%)]'>
         <A.Icon class='border-2 border-[#b4c4da] rounded-[3px]'>
-          <img class='w-[42px] h-[42px]' src="./src/assets/chess-icon.png" />
+          <img class='w-[42px] h-[42px]' src={`data:image/jpeg;base64,${store.user.photo}`} />
         </A.Icon>
-        <p class='pl-1.5 [text-shadow:rgba(0,_0,_0,_0.7)_1px_1px] text-[16px] font-normal'>Admin</p>
+        <p class='pl-1.5 [text-shadow:rgba(0,_0,_0,_0.7)_1px_1px] text-[16px] font-normal'>{store.user.nickname || store.user.fName || store.user.lName}</p>
       </A.StartMenuHeader>
       <A.StartMenuMain class='flex-1 bg-white relative flex  [font-size:11px]
                   [box-shadow:#3467C7_0px_1px] [border-top:1px_solid_rgb(56,_93,_231)] mx-[2px] h-[390px]
@@ -358,7 +500,7 @@ function StartMenuContent() {
                     [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgb(218,_136,_74)_50%,_rgba(0,_0,_0,_0)_100%)]
                     '></A.OrangeLine>
         <div class='grid grid-cols-2 h-full w-full overflow-hidden'>
-          <div class=''>
+          <div class='flex flex-col'>
             <For each={store.desktopRecents.pinnedShortcuts.slice(0, 8)} children={(sm) => (
               <XpRightClickMenu xpRightClickMenuItemList={<>
                 <XpRightClickMenuItem onClick={() => {
@@ -366,20 +508,15 @@ function StartMenuContent() {
                   setStartOpen(false)
                 }} title={<span class='font-semibold'>Open</span>} />
                 <XpRightClickMenuItem disabled title="Run as..." />
-                <XpRightClickMenuItem title="TODO Open file location" />
                 <XpRightClickMenuItem onClick={() => {
                   const index = store.desktopRecents.pinnedShortcuts.findIndex((sm2) => sm.prog == sm2.prog)
                   store.desktopRecents.pinnedShortcuts.splice(index, 1)
                 }} title="Unpin from Start Menu" />
-                <XpRightClickMenuDivider />
-                <XpRightClickMenuItem title="TODO Copy" />
-                <XpRightClickMenuDivider />
-                <XpRightClickMenuItem title="TODO Properties" />
               </>}>
                 <A.ProgramItemImportant onClick={() => {
                   openApp({ program: sm.prog, params: sm.params })
                   setStartOpen(false)
-                }} class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
+                }} class='mx-1 px-1 items-center mb-1 mt-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
                   <img class='h-[30px] w-[30px]' src={sm.icon} />
                   <p class='ml-[3px] pr-2  font-bold  '>
                     {sm.name ? sm.name : "Untitled Program"}
@@ -391,49 +528,45 @@ function StartMenuContent() {
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(0,_0,_0,_0.1)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box;]
                       h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperatorGrey>
-            <For each={store.desktopRecents.recentPrograms.slice(0, 8 - Math.min(8, store.desktopRecents.pinnedShortcuts.length))} children={(sm) => (
+            <For each={store.desktopRecents.recentPrograms.slice(0, 8 - Math.min(8, store.desktopRecents.pinnedShortcuts.length)).filter(sm => sm.name)} children={(sm) => (
               <XpRightClickMenu xpRightClickMenuItemList={<>
                 <XpRightClickMenuItem onClick={() => {
-                    openApp({ program: sm.prog, params: sm.params })
-                    setStartOpen(false)
-                  }} title={<span class='font-semibold'>Open</span>} />
-                  <XpRightClickMenuItem disabled title="Run as..." />
-                  <XpRightClickMenuItem title="TODO Open file location" />
-                  <XpRightClickMenuItem onClick={() => {
-                    store.desktopRecents.pinnedShortcuts.unshift(sm)
-                  }} title="Pin to Start Menu" />
-                  <XpRightClickMenuDivider />
-                  <XpRightClickMenuItem title="TODO Copy" />
-                  <XpRightClickMenuDivider />
-                  <XpRightClickMenuItem title="TODO Properties" />
+                  openApp({ program: sm.prog, params: sm.params })
+                  setStartOpen(false)
+                }} title={<span class='font-semibold'>Open</span>} />
+                <XpRightClickMenuItem disabled title="Run as..." />
+                <XpRightClickMenuItem onClick={() => {
+                  store.desktopRecents.pinnedShortcuts.unshift(sm)
+                }} title="Pin to Start Menu" />
               </>}>
-                  <A.ProgramItem onClick={() => {
-                    openApp({ program: sm.prog, params: sm.params })
-                    setStartOpen(false)
-                  }} class='mx-1 px-1 mt-2 items-center my-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
-                    <img class='h-[30px] w-[30px]' src={sm.icon} />
-                    <p class='ml-[3px]  '>{sm.name ? sm.name : "Untitled Program"}</p>
-                  </A.ProgramItem>
+                <A.ProgramItem onClick={() => {
+                  openApp({ program: sm.prog, params: sm.params })
+                  setStartOpen(false)
+                }} class='mx-1 px-1 items-center mb-1 mt-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
+                  <img class='h-[30px] w-[30px]' src={sm.icon} />
+                  <p class='ml-[3px]  '>{sm.name ? sm.name : "Untitled Program"}</p>
+                </A.ProgramItem>
               </XpRightClickMenu>
             )} />
-            <div class='h-[20px]'></div>
+            <div class='min-h-[20px] flex-1'></div>
             <A.ItemSeperatorGrey class='
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(0,_0,_0,_0.1)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box;]
                       h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperatorGrey>
+                      
             <HoverCard
               openDelay={250}
               placement='top-end'
               open={hoverMount()}
             >
-              <HoverCardTrigger class='w-16'>
+              <HoverCardTrigger class=''>
                 <A.AllPrograms class='group mx-1 px-1 py-px mt-1 items-center my-1.5 flex hover:bg-[#4069BF] text-black  hover:text-white'>
                   <div class='w-[30px]'></div>
                   <p class='ml-[3px] font-bold mr-[3px]'>All Programs</p>
-                  <img class='h-[22px] w-[22px] group-hover:brightness-125' src='./src/assets/all-programs.ico' />
+                  <img class='h-[22px] w-[22px] group-hover:brightness-125' src='/src/assets/all-programs.ico' />
                 </A.AllPrograms>
               </HoverCardTrigger>
-              <HoverCardContent class='text-[0.62rem] w-44 ml-[132px] -mb-[36px] rounded-none bg-white border-none p-0
+              <HoverCardContent style={{ "z-index": zIndex.value + 2 }} class='text-[0.62rem] w-44 ml-[132px] -mb-[36px] rounded-none bg-white border-none p-0
                         [box-shadow:rgb(114,_173,_233)_0px_0px_0px_1px_inset,_rgba(0,_0,_0,_0.5)_2px_3px_3px]'>
                 <For
                   each={store.desktopStartProgs}
@@ -450,7 +583,7 @@ function StartMenuContent() {
               openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Documents" } })
               setStartOpen(false)
             }} class='mx-1 px-1 py-px mt-2 items-center my-1.5 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/796.ico' />
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/796.ico' />
               <p class='ml-[3px]  font-bold  '>My Documents</p>
             </A.PcItem>
             <HoverCard
@@ -459,16 +592,16 @@ function StartMenuContent() {
             >
               <HoverCardTrigger>
                 <A.PcItem class='aria-disabled:grayscale group mx-1 px-1 py-px  my-1.5 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-                  <img class='h-[22px] w-[22px]' src='./src/assets/ico/170.ico' />
+                  <img class='h-[22px] w-[22px]' src='/src/assets/ico/170.ico' />
                   <p class='ml-[3px]  font-bold  '>My Recent Documents </p>
                   <div class='w-0 h-0 ml-4 group-hover:border-l-white border-l-[#00136b] border-[4px] border-transparent'></div>
                 </A.PcItem>
               </HoverCardTrigger>
-              <HoverCardContent class='w-44 ml-[22rem] text-[11px] -mt-8 rounded-none bg-white border-none p-0
+              <HoverCardContent style={{ "z-index": zIndex.value + 2 }} class='w-44 ml-[22rem] text-xs -mt-8 rounded-none bg-white border-none p-0
                              [box-shadow:rgb(114,_173,_233)_0px_0px_0px_1px_inset,_rgba(0,_0,_0,_0.5)_2px_3px_3px]'>
                 <Show when={store.desktopRecents.recentFiles.length > 0} fallback={
                   <A.AllItem class='p-1 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
-                    <img class='w-[16px] h-[16px] invisible mx-2' src="./src/assets/ico/581.ico" />
+                    <img class='w-[16px] h-[16px] invisible mx-2' src="/src/assets/ico/581.ico" />
                     <p>(Empty)</p>
                   </A.AllItem>
                 }>
@@ -478,7 +611,7 @@ function StartMenuContent() {
                       <A.AllItem onClick={async () => {
                         await openFile(file.params)
                       }} class='p-1 w-full flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
-                        <img class='w-[16px] h-[16px] mx-1' src="./src/assets/ico/514.ico" />
+                        <img class='w-[16px] h-[16px] mx-1' src={getFileIconImg({ file: { name: file.name || (file.params.openPath as string).slice((file.params.openPath as string).lastIndexOf("/") + 1) } })} />
                         <p class='overflow-hidden text-ellipsis text-nowrap flex-1'>{file.name || (file.params.openPath as string).slice((file.params.openPath as string).lastIndexOf("/") + 1)}</p>
                       </A.AllItem>
                     )}
@@ -486,64 +619,77 @@ function StartMenuContent() {
                 </Show>
               </HoverCardContent>
             </HoverCard>
+
             <A.PcItem onClick={() => {
               openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Pictures" } })
               setStartOpen(false)
             }} class='mx-1 px-1 py-px  my-1 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/808.ico' />
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/808.ico' />
               <p class='ml-[3px]  font-bold  '>My Pictures</p>
             </A.PcItem>
             <A.PcItem onClick={() => {
               openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Music" } })
               setStartOpen(false)
             }} class='mx-1 px-1 py-px  my-1 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/820.ico' />
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/820.ico' />
               <p class='ml-[3px]  font-bold  '>My Music</p>
             </A.PcItem>
             <A.PcItem onClick={() => {
               openApp({ program: "@arksouthern/luna.explore", params: { openPath: "" } })
               setStartOpen(false)
             }} class='mx-1 px-1 py-px  my-1 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/123.ico' />
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/123.ico' />
               <p class='ml-[3px]  font-bold  '>My Computer</p>
             </A.PcItem>
             <A.ItemSeperator class='
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(135,_179,_226,_0.71)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box]
                        h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperator>
-            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/182.ico' />
+            <A.SettingsItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.explore", params: { openPath: "../data/Settings/" } })
+              setStartOpen(false)
+            }} class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/182.ico' />
               <p class='ml-[3px]   '>Control Panel</p>
             </A.SettingsItem>
-            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/357.ico' />
+            <A.SettingsItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.stellar", params: { openPath: "" } })
+              setStartOpen(false)
+            }} class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
+              <img class='h-[22px] w-[22px]' src='/src/assets/shell32/271.ico' />
+              <p class='ml-[3px]   '>Add or Remove Programs</p>
+            </A.SettingsItem>
+            <A.SettingsItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.settings.folder-options", params: { openPath: "" } })
+              setStartOpen(false)
+            }} class='aria-disabled:grayscale mx-1 px-1 py-px items-center my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
+              <img class='h-[22px] w-[22px] ' src='/src/assets/ico/581.ico' />
               <p class='ml-[3px]   '>Set Program Access and Defaults</p>
             </A.SettingsItem>
-            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px] ' src='./src/assets/ico/633.ico' />
-              <p class='ml-[3px]   '>Connect To</p>
-            </A.SettingsItem>
-            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/436.ico' />
+            {/* <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/436.ico' />
               <p class='ml-[3px]   '>Printers and Faxes</p>
-            </A.SettingsItem>
+            </A.SettingsItem> */}
             <A.ItemSeperator class='
                        [background:linear-gradient(to_right,_rgba(0,_0,_0,_0)_0%,_rgba(135,_179,_226,_0.71)_50%,_rgba(0,_0,_0,_0)_100%)_padding-box_content-box]
                        h-[7.5px] [border-top:3px_solid_transparent] [border-bottom:3px_solid_transparent]
                        '></A.ItemSeperator>
             <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/967.ico' />
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/967.ico' />
               <p class='ml-[3px]   '>Help and Support</p>
             </A.SettingsItem>
-            <A.SettingsItem aria-disabled class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/194.ico' />
+            <A.SettingsItem onClick={() => {
+              openApp({ program: "@arksouthern/luna.explore.find", params: { openPath: "" } })
+              setStartOpen(false)
+            }} class='aria-disabled:grayscale mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/194.ico' />
               <p class='ml-[3px]   '>Search</p>
             </A.SettingsItem>
             <A.SettingsItem onClick={() => {
               openApp({ program: "@arksouthern/luna.run", params: { openPath: "" } })
               setStartOpen(false)
             }} class=' mx-1 px-1 py-px items-center  my-1 flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'>
-              <img class='h-[22px] w-[22px]' src='./src/assets/ico/561.ico' />
+              <img class='h-[22px] w-[22px]' src='/src/assets/ico/561.ico' />
               <p class='ml-[3px]   '>Run...</p>
             </A.SettingsItem>
 
@@ -553,17 +699,31 @@ function StartMenuContent() {
       <A.StartMenuFooter class='h-[36px] text-xs flex justify-end
                   [background:linear-gradient(rgb(66,_130,_214)_0%,_rgb(59,_133,_224)_3%,_rgb(65,_138,_227)_5%,_rgb(65,_138,_227)_17%,_rgb(60,_135,_226)_21%,_rgb(55,_134,_228)_26%,_rgb(52,_130,_227)_29%,_rgb(46,_126,_225)_39%,_rgb(35,_116,_223)_49%,_rgb(32,_114,_219)_57%,_rgb(25,_110,_219)_62%,_rgb(23,_107,_216)_72%,_rgb(20,_104,_213)_75%,_rgb(17,_101,_210)_83%,_rgb(15,_97,_203)_88%)]
                 '>
-        <A.CommandItem aria-disabled class='aria-disabled:grayscale aria-disabled:opacity-80 mx-1 px-1 my-1 items-center py-1.5 flex hover:bg-[rgba(60,_80,_210,_0.5)] text-white '>
-          <img class='h-[22px] w-[22px]' src='./src/assets/ico/338.ico' />
+        <A.CommandItem onClick={() => {
+          location.href = location.href.split("?")[0]
+        }} class='aria-disabled:grayscale aria-disabled:opacity-80 mx-1 px-1 my-1 items-center py-1.5 flex hover:bg-[rgba(60,_80,_210,_0.5)] text-white '>
+          <img class='h-[22px] w-[22px]' src='/src/assets/ico/338.ico' />
           <p class='ml-[3px]  '>Log Off</p>
         </A.CommandItem>
         <A.CommandItem aria-disabled class='aria-disabled:grayscale aria-disabled:opacity-80 mx-1 px-1 my-1 items-center py-1.5 flex hover:bg-[rgba(60,_80,_210,_0.5)] text-white '>
-          <img class='h-[22px] w-[22px]' src='./src/assets/ico/241.ico' />
+          <img class='h-[22px] w-[22px]' src='/src/assets/ico/241.ico' />
           <p class='ml-[3px]  '>Turn Off Computer</p>
         </A.CommandItem>
       </A.StartMenuFooter>
     </A.StartMenu>
   )
+  function StartSideItem(props: { title: any, img: string, disabled: boolean, onClick?: (e: MouseEvent) => any }) {
+    return (
+      <A.StartSideItem
+        onClick={props.onClick}
+        aria-disabled={props.disabled}
+        class='aria-disabled:grayscale mx-1 px-1 py-px my-1 items-center flex hover:bg-[#4069BF] text-[#00136b]  hover:text-white'
+      >
+        <img class='h-[22px] w-[22px]' src={props.img} />
+        <p class='ml-[3px]'>{props.title}</p>
+      </A.StartSideItem>
+    )
+  }
 }
 
 function AllProgramsRecursive(props: { sm: Sm, setHoverCardMount: Setter<true | undefined>, nestCount: number }) {
@@ -589,20 +749,20 @@ function AllProgramsRecursive(props: { sm: Sm, setHoverCardMount: Setter<true | 
         >
           <HoverCardTrigger>
             <A.AllItem class='px-1 py-0.5 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
-              <img class='w-[16px] h-[16px] mx-1' src={"./src/assets/ico/23.ico"} />
+              <img class='w-[16px] h-[16px] mx-1' src={"/src/assets/ico/23.ico"} />
               <p>{props.sm.name}</p>
               <div class='flex-1'></div>
               <div class="h-4 translate-x-2 -rotate-90 before:border-x-transparent before:border-y-black before:border-[4px] before:border-b-0" />
             </A.AllItem>
           </HoverCardTrigger>
-          <HoverCardContent style={{ "--nest-count": props.nestCount }}
+          <HoverCardContent style={{ "--nest-count": props.nestCount, "z-index": zIndex.value + 2 }}
             onMouseLeave={() => props.setHoverCardMount(undefined)}
             onMouseEnter={() => props.setHoverCardMount(true)}
-            class='w-44 ml-[calc(11rem_*_var(--nest-count))] text-[11px] relative -mb-[1.5rem] rounded-none bg-white border-none p-0
+            class='w-44 ml-[calc(11rem_*_var(--nest-count))] text-xs relative -mb-[1.5rem] rounded-none bg-white border-none p-0
                              [box-shadow:rgb(114,_173,_233)_0px_0px_0px_1px_inset,_rgba(0,_0,_0,_0.5)_2px_3px_3px]'>
             <Show when={props.sm.children.length > 0} fallback={
               <A.AllItem class='p-1 flex [box-shadow:rgb(64,_129,_255)_3px_0px_inset] hover:bg-[#4069BF] hover:text-white'>
-                <img class='w-[16px] h-[16px] invisible mx-2' src="./src/assets/ico/581.ico" />
+                <img class='w-[16px] h-[16px] invisible mx-2' src="/src/assets/ico/581.ico" />
                 <p>(Empty)</p>
               </A.AllItem>
             }>
@@ -625,6 +785,7 @@ function AllProgramsRecursive(props: { sm: Sm, setHoverCardMount: Setter<true | 
 
   )
 }
+
 const WIN_MARGIN = 1;
 const PIX_TO_REM = 16;
 const subToRem = (pix: number, cache: number) =>
@@ -635,20 +796,19 @@ onmousemove = (e) => {
     e.stopImmediatePropagation()
     e.preventDefault()
     const { cache, item } = folderMap.itemMoving
-    item.app.placeX = subToRem(e.clientX, cache.x)
-    item.app.placeY = subToRem(e.clientY, cache.y)
+    item.app.placeX = subToRem(e.clientX, cache.x) // * props.zoom
+    item.app.placeY = subToRem(e.clientY, cache.y) // * /*props.zoom*/1
   }
   else if (folderMap.windowMoving) {
     e.stopImmediatePropagation()
     e.preventDefault()
-    folderMap.window.x = subToRem(e.clientX, folderMap.windowMoving.cache.x)
-    folderMap.window.y = subToRem(e.clientY, folderMap.windowMoving.cache.y)
+    folderMap.window.x = subToRem(e.clientX, folderMap.windowMoving.cache.x) // * /*props.zoom*/1
+    folderMap.window.y = subToRem(e.clientY, folderMap.windowMoving.cache.y) // * /*props.zoom*/1
   }
   else if (folderMap.itemResizing) {
     e.stopImmediatePropagation()
     e.preventDefault()
     const { cache, item } = folderMap.itemResizing
-    console.log(e.clientX, cache.x)
     const x = subToRem(e.clientX, cache.x)
     const y = subToRem(e.clientY, cache.y)
     if (cache.sizing == 'w') {
@@ -671,14 +831,76 @@ onmouseup = (e) => {
 }
 setInterval(() => store.time = new Date, 10 * 1000)
 
-const Main: Component = () => {
-  return (
-    <Destination
-      showWhenConnected={
-        <WinXp />
-      }
-    />
-  );
-};
+export default function LunaBootOrCriticalFailure() {
 
-export default Main;
+  const ParseErrorLine = (props: { line: string, isFirstLine?: boolean }) => {
+    const colsIdxStart = props.line.lastIndexOf(":")
+    const cols = props.line.slice(colsIdxStart + 1)
+    const lineNoIdxStart = props.line.lastIndexOf(":", colsIdxStart - 1)
+    const lineNo = props.line.slice(lineNoIdxStart + 1, colsIdxStart)
+    const funcIdxEnd = props.line.indexOf("@")
+    const func = props.line.slice(0, funcIdxEnd).toUpperCase()
+    return (
+      <A.ErrLine aria-expanded={props.line.includes("node_modules")} class='aria-expanded:text-[#aaa]'>
+        <Show
+          when={props.isFirstLine}
+          children={(
+            <>
+              *** STOP {func}: (Lx{lineNo.padStart(4, '0')}, Cx{cols.padStart(4, '0')})
+              <br />
+            </>
+          )}
+          fallback={(
+            <>
+              *** &nbsp;&nbsp;&nbsp;&nbsp; (Lx{lineNo.padStart(4, '0')}, Cx{cols.padStart(4, '0')}) &nbsp;&nbsp;&nbsp;&nbsp; {func}
+            </>
+          )}
+        />
+      </A.ErrLine>
+    )
+  }
+  return (
+    <ErrorBoundary
+      fallback={
+        (error, retry) => {
+          console.error(error)
+          return (
+            <div class='w-screen h-screen fixed top-0 bottom-0 bg-[#009] text-[#ddd] p-8 font-mono text-lg leading-6'>
+              <A.TextContent class='flex flex-col gap-4 h-full overflow-hidden'>
+                <p>
+                  A problem has been detected and Luna has been disconnected to prevent damage to your computer.
+                </p>
+                <p>
+                  CORE_BOOT_{error.name.toUpperCase().replace("ERROR", "")}_INSTABILITY
+                </p>
+                <p>
+                  If this is the first time you've seen this Stop error screen, restart your computer.
+                  If this screen appears again, contact your system administrator for more instructions.
+                </p>
+                <p>
+                  Technical Information:
+                </p>
+                <p>
+                  {error.message.toUpperCase()}
+                </p>
+                <p>
+                  <For each={error.stack.split("\n")}>
+                    {(line, i) => (
+                      <ParseErrorLine line={line} isFirstLine={!i()} />
+                    )}
+                  </For>
+                </p>
+              </A.TextContent>
+            </div>
+          )
+        }
+      }
+    >
+      <Destination
+        showWhenConnected={
+          <LunaOsCore />
+        }
+      />
+    </ErrorBoundary>
+  )
+}

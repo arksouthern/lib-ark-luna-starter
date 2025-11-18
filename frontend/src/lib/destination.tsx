@@ -8,9 +8,9 @@ import { TextField, TextFieldInput } from "~/components/ui/text-field"
 import * as Icons from "solid-icons/fa"
 import { createMutable } from "solid-js/store"
 
-export type IsConnected = { as: "connected" } | { as: "loading" } | { as: "error" } | { as: "outOfDate" }
+export { IsConnected }
 
-
+type IsConnected = { as: "connected" } | { as: "loading" } | { as: "error" } | { as: "outOfDate" }
 
 export const
 
@@ -25,18 +25,18 @@ export const
 		isConnected: { as: "loading" } as IsConnected
 	})
 	,
-	connectBackend = async (props:{tempConnectionData: {ip: string, port: string}}) => {
+	connectBackend = async (props: { tempConnectionData: { ip: string, port: string } }) => {
 		const { ip, port } = props.tempConnectionData
 		if (port) setPort({ port })
 		if (ip) setIp({ ip })
-	
+
 		console.log({ ip, port })
 		destinationStore.connectionData = { ip, port }
-	
+
 		await connectionChangeBackendTest()
-	
+
 		if (unsavedDestinationStore.isConnected.as != "connected") return
-	
+
 		history.replaceState({}, "", `${location.origin}${location.pathname}?${getRoot()}`)
 	}
 	,
@@ -133,7 +133,7 @@ export const
 											onInput={(e) => tempConnectionData.ip = e.currentTarget.value}
 											onKeyDown={async (e: any) => {
 												if (e.key == "Enter") {
-													await connectBackend({tempConnectionData})
+													await connectBackend({ tempConnectionData })
 												}
 											}}
 										/>
@@ -148,7 +148,7 @@ export const
 								</TextField> 
 								*/}
 									<Button onClick={async () => {
-										await connectBackend({tempConnectionData})
+										await connectBackend({ tempConnectionData })
 									}}>Connect</Button>
 								</AlertDialogContent>
 							</AlertDialog>

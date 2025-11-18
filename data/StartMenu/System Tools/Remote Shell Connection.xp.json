@@ -1,0 +1,5 @@
+{
+    "prog": "@arksouthern/luna.ssh",
+    "params": {},
+    "icon": "/src/assets/remote-desktop-icon.png"
+}
